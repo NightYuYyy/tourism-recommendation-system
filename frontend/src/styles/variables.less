@@ -1,0 +1,101 @@
+// 颜色系统
+@primary-color: #0ea5e9;
+@primary-color-light: #7dd3fc;
+@primary-color-dark: #0369a1;
+@success-color: #10b981;
+@warning-color: #f59e0b;
+@error-color: #ef4444;
+@info-color: #3b82f6;
+
+// 文字颜色
+@text-color: #1f2937;
+@text-color-secondary: #4b5563;
+@text-color-light: #9ca3af;
+@text-color-inverse: #ffffff;
+
+// 背景颜色
+@bg-color: #ffffff;
+@bg-color-light: #f3f4f6;
+@bg-color-dark: #1f2937;
+
+// 边框颜色
+@border-color: #e5e7eb;
+@border-color-dark: #d1d5db;
+
+// 字体
+@font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+  'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+  'Noto Color Emoji';
+
+// 字体大小
+@font-size-base: 14px;
+@font-size-lg: 16px;
+@font-size-sm: 12px;
+
+// 间距
+@spacing-unit: 8px;
+@spacing-xs: @spacing-unit;
+@spacing-sm: @spacing-unit * 2;
+@spacing-md: @spacing-unit * 3;
+@spacing-lg: @spacing-unit * 4;
+@spacing-xl: @spacing-unit * 6;
+
+// 圆角
+@border-radius-base: 4px;
+@border-radius-sm: 2px;
+@border-radius-lg: 8px;
+@border-radius-xl: 16px;
+
+// 阴影
+@box-shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+@box-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+@box-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+// 过渡
+@transition-duration: 0.2s;
+@transition-timing-function: ease-in-out;
+
+// 断点
+@screen-xs: 480px;
+@screen-sm: 576px;
+@screen-md: 768px;
+@screen-lg: 992px;
+@screen-xl: 1200px;
+@screen-xxl: 1600px;
+
+// Mixins
+.text-ellipsis() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-ellipsis(@lines: 2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: @lines;
+  overflow: hidden;
+}
+
+.flex-center() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.absolute-center() {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hover-transition() {
+  transition: all @transition-duration @transition-timing-function;
+}
+
+.responsive(@breakpoint) {
+  @media screen and (min-width: @breakpoint) {
+    @content();
+  }
+}

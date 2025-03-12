@@ -1,0 +1,200 @@
+@import './variables.less';
+
+// 重置样式
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: @font-family;
+  font-size: @font-size-base;
+  color: @text-color;
+  background-color: @bg-color-light;
+  line-height: 1.5;
+}
+
+// 通用按钮样式
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: @spacing-xs @spacing-md;
+  border-radius: @border-radius-base;
+  font-size: @font-size-base;
+  cursor: pointer;
+  .hover-transition();
+
+  &-primary {
+    background-color: @primary-color;
+    color: @text-color-inverse;
+    border: none;
+
+    &:hover {
+      background-color: @primary-color-dark;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &-secondary {
+    background-color: @bg-color;
+    color: @text-color;
+    border: 1px solid @border-color;
+
+    &:hover {
+      border-color: @primary-color;
+      color: @primary-color;
+    }
+  }
+}
+
+// 输入框样式
+.input {
+  width: 100%;
+  padding: @spacing-xs @spacing-sm;
+  border: 1px solid @border-color;
+  border-radius: @border-radius-base;
+  font-size: @font-size-base;
+  .hover-transition();
+
+  &:focus {
+    outline: none;
+    border-color: @primary-color;
+    box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+  }
+
+  &::placeholder {
+    color: @text-color-light;
+  }
+}
+
+// 卡片样式
+.card {
+  background-color: @bg-color;
+  border-radius: @border-radius-lg;
+  box-shadow: @box-shadow-base;
+  .hover-transition();
+
+  &:hover {
+    box-shadow: @box-shadow-md;
+  }
+}
+
+// 布局类
+.container {
+  max-width: @screen-xl;
+  margin: 0 auto;
+  padding: 0 @spacing-md;
+}
+
+.flex {
+  display: flex;
+
+  &-center {
+    .flex-center();
+  }
+
+  &-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &-column {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// 间距类
+.margin {
+  &-xs { margin: @spacing-xs; }
+  &-sm { margin: @spacing-sm; }
+  &-md { margin: @spacing-md; }
+  &-lg { margin: @spacing-lg; }
+  &-xl { margin: @spacing-xl; }
+}
+
+.padding {
+  &-xs { padding: @spacing-xs; }
+  &-sm { padding: @spacing-sm; }
+  &-md { padding: @spacing-md; }
+  &-lg { padding: @spacing-lg; }
+  &-xl { padding: @spacing-xl; }
+}
+
+// 文本类
+.text {
+  &-center { text-align: center; }
+  &-left { text-align: left; }
+  &-right { text-align: right; }
+  
+  &-primary { color: @primary-color; }
+  &-success { color: @success-color; }
+  &-warning { color: @warning-color; }
+  &-error { color: @error-color; }
+  &-info { color: @info-color; }
+  
+  &-ellipsis {
+    .text-ellipsis();
+  }
+}
+
+// 响应式网格
+.grid {
+  display: grid;
+  gap: @spacing-md;
+
+  @media (min-width: @screen-sm) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: @screen-md) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: @screen-lg) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// 动画
+.fade {
+  &-enter-active,
+  &-leave-active {
+    transition: opacity @transition-duration @transition-timing-function;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}
+
+// 加载动画
+.loading-spinner {
+  .flex-center();
+  width: 100%;
+  height: 100%;
+  
+  &::after {
+    content: '';
+    width: 30px;
+    height: 30px;
+    border: 2px solid @border-color;
+    border-top-color: @primary-color;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

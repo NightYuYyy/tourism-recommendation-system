@@ -1,0 +1,55 @@
+# 依赖
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建产物
+dist/
+build/
+out/
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志
+logs/
+*.log
+
+# 缓存
+.cache/
+.temp/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 测试覆盖率
+coverage/
+
+# 前端构建
+frontend/dist/
+frontend/.nuxt/
+frontend/.next/
+
+# 后端构建
+backend/dist/
+backend/build/
+
+# 数据库
+*.sqlite
+*.db
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
