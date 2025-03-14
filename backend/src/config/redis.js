@@ -2,7 +2,9 @@ require('dotenv').config()
 const Redis = require('redis')
 
 const redisClient = Redis.createClient({
-  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+  database: parseInt(process.env.REDIS_DB || '0'), // 指定使用的数据库
+  password: process.env.REDIS_PASSWORD || undefined // 如果设置了密码则使用
 })
 
 redisClient.on('error', (err) => {
@@ -10,7 +12,7 @@ redisClient.on('error', (err) => {
 })
 
 redisClient.on('connect', () => {
-  console.log('Redis连接成功')
+  console.log(`Redis连接成功，使用数据库 ${process.env.REDIS_DB || 0}`)
 })
 
 // 连接Redis
