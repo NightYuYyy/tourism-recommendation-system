@@ -83,6 +83,24 @@
   justify-content: center;
 }
 
+.flex-between() {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card() {
+  background-color: @bg-color;
+  border-radius: @border-radius-lg;
+  box-shadow: @box-shadow-base;
+  overflow: hidden;
+  transition: box-shadow @transition-duration @transition-timing-function;
+  
+  &:hover {
+    box-shadow: @box-shadow-md;
+  }
+}
+
 .absolute-center() {
   position: absolute;
   top: 50%;

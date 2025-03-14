@@ -8,14 +8,30 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// CORS配置
+const corsOptions = {
+  origin: function(origin, callback) {
+    // 允许所有来源，或者你可以设置具体的域名列表
+    callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
 // 中间件
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // 路由
 const authRoutes = require('./routes/authRoutes');
 const attractionRoutes = require('./routes/attractionRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
+
+// 添加一个测试路由
+app.get('/api/test', (req, res) => {
+  res.json({ message: '后端服务器正常运行' });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/attractions', attractionRoutes);

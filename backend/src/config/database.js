@@ -35,7 +35,7 @@ const testConnection = async () => {
   }
 }
 
-module.exports = {
-  sequelize,
-  testConnection
-}
+// 执行连接测试
+testConnection()
+
+module.exports = sequelize

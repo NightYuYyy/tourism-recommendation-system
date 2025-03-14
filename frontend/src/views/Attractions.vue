@@ -182,9 +182,9 @@ onMounted(() => {
 .filter-section {
   margin-bottom: @spacing-xl;
   padding: @spacing-lg;
-  background: @background-color;
+  background: @bg-color;
   border-radius: @border-radius-lg;
-  box-shadow: @box-shadow-sm;
+  box-shadow: @box-shadow-base;
 
   .search-box {
     margin-bottom: @spacing-lg;
@@ -194,7 +194,7 @@ onMounted(() => {
       height: 44px;
       padding: 0 @spacing-lg;
       border: 1px solid @border-color;
-      border-radius: @border-radius;
+      border-radius: @border-radius-base;
       font-size: @font-size-lg;
       
       &:focus {
@@ -243,7 +243,7 @@ onMounted(() => {
     position: relative;
     aspect-ratio: 16/9;
     overflow: hidden;
-    border-radius: @border-radius @border-radius 0 0;
+    border-radius: @border-radius-base @border-radius-base 0 0;
 
     img {
       width: 100%;

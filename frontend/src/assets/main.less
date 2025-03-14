@@ -1,0 +1,242 @@
+@import '../styles/variables.less';
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* 全局样式 */
+body {
+  font-family: @font-family;
+  color: @text-color;
+  background-color: #f5f7fa;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+/* 容器样式 */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 @spacing-md;
+}
+
+/* 按钮样式 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: @border-radius-base;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+  
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.btn-primary {
+  background-color: @primary-color;
+  color: white;
+  
+  &:hover {
+    background-color: darken(@primary-color, 5%);
+  }
+}
+
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: @text-color;
+  
+  &:hover {
+    background-color: darken(#e5e7eb, 5%);
+  }
+}
+
+.btn-text {
+  background-color: transparent;
+  color: @primary-color;
+  padding: 4px 8px;
+  
+  &:hover {
+    background-color: rgba(@primary-color, 0.1);
+  }
+}
+
+/* 输入框样式 */
+.input-primary {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid @border-color;
+  border-radius: @border-radius-base;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    border-color: @primary-color;
+    box-shadow: 0 0 0 2px rgba(@primary-color, 0.2);
+    outline: none;
+  }
+}
+
+/* Element UI 样式覆盖 */
+.el-button {
+  font-weight: 500;
+}
+
+.el-button--primary {
+  background-color: @primary-color;
+  border-color: @primary-color;
+  
+  &:hover, &:focus {
+    background-color: lighten(@primary-color, 10%);
+    border-color: lighten(@primary-color, 10%);
+  }
+}
+
+.el-card {
+  border-radius: @border-radius-lg;
+  box-shadow: @box-shadow-base;
+  transition: box-shadow 0.3s ease;
+  
+  &:hover {
+    box-shadow: @box-shadow-md;
+  }
+}
+
+.el-menu {
+  border-right: none;
+}
+
+.el-menu-item.is-active {
+  color: @primary-color;
+}
+
+.el-pagination {
+  margin-top: @spacing-lg;
+  justify-content: center;
+}
+
+.el-rate {
+  --el-rate-icon-color: #f59e0b;
+}
+
+.el-tag {
+  border-radius: 4px;
+}
+
+/* 页面通用样式 */
+.page-container {
+  padding: @spacing-lg 0;
+}
+
+.page-header {
+  margin-bottom: @spacing-xl;
+  
+  h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: @spacing-sm;
+  }
+  
+  p {
+    color: @text-color-secondary;
+  }
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: @spacing-lg;
+  padding-bottom: @spacing-sm;
+  border-bottom: 1px solid @border-color;
+}
+
+/* 卡片网格布局 */
+.card-grid {
+  display: grid;
+  gap: @spacing-lg;
+  
+  @media (min-width: @screen-sm) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (min-width: @screen-lg) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 加载和错误状态 */
+.loading-container, .error-container {
+  padding: @spacing-xl;
+  text-align: center;
+}
+
+.error-message {
+  color: @error-color;
+  margin-bottom: @spacing-lg;
+}
+
+/* 响应式工具类 */
+.hide-sm {
+  @media (max-width: @screen-sm) {
+    display: none;
+  }
+}
+
+.hide-md {
+  @media (max-width: @screen-md) {
+    display: none;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-sm {
+  gap: @spacing-sm;
+}
+
+.gap-md {
+  gap: @spacing-md;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mt-lg {
+  margin-top: @spacing-lg;
+}
+
+.mb-lg {
+  margin-bottom: @spacing-lg;
+}
