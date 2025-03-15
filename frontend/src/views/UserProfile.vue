@@ -185,7 +185,7 @@
         <div v-if="activeTab === 4" class="tab-content">
           <h2>安全设置</h2>
           
-          <form @submit.prevent="changePassword" class="password-form">
+          <form @submit.prevent="updatePassword" class="password-form">
             <div class="form-group">
               <label>当前密码</label>
               <input type="password" v-model="passwordForm.currentPassword" class="input-primary">
@@ -212,16 +212,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '../store/modules/user'
+import { useUserStore } from '../store/user'
+import axios from 'axios'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(true)
 const error = ref(null)
-const user = ref({})
+const user = computed(() => userStore.user || {})
 const activeTab = ref(0)
 const favorites = ref([])
 const reviews = ref([])
@@ -277,38 +278,53 @@ const fetchUserProfile = async () => {
   error.value = null
   
   try {
-    // 这里应该是从API获取数据
-    // const response = await fetch('/api/users/profile')
-    // user.value = await response.json()
+    // 从store获取用户数据
+    await userStore.fetchUserProfile()
     
-    // 模拟数据
-    setTimeout(() => {
-      user.value = {
-        id: 1,
-        username: '示例用户',
-        email: 'example@example.com',
-        phone: '13800138000',
-        avatar: 'https://via.placeholder.com/100x100',
-        createdAt: '2023-01-15T08:30:00Z',
-        preferences: {
-          attractionTypes: ['nature', 'cultural', 'food'],
-          budget: [500, 2000],
-          travelDuration: 'medium'
-        }
-      }
+    console.log('用户信息:', user.value)
+    
+    // 填充表单数据
+    profileForm.username = user.value.username || ''
+    profileForm.email = user.value.email || ''
+    profileForm.phone = user.value.phone || ''
+    
+    if (user.value.preferences) {
+      preferencesForm.attractionTypes = user.value.preferences.attractionTypes || []
+      preferencesForm.budget = user.value.preferences.budget || [500, 2000]
+      preferencesForm.travelDuration = user.value.preferences.travelDuration || 'medium'
+    }
+    
+    // 确保用户ID存在后再获取收藏和评价数据
+    if (user.value && user.value.id) {
+      // 获取收藏数据
+      await fetchFavorites()
       
-      // 填充表单数据
-      profileForm.username = user.value.username
-      profileForm.email = user.value.email
-      profileForm.phone = user.value.phone
-      
-      if (user.value.preferences) {
-        preferencesForm.attractionTypes = user.value.preferences.attractionTypes
-        preferencesForm.budget = user.value.preferences.budget
-        preferencesForm.travelDuration = user.value.preferences.travelDuration
-      }
-      
-      // 模拟收藏数据
+      // 获取评价数据
+      await fetchReviews()
+    } else {
+      console.error('用户ID不存在，无法获取收藏和评价')
+    }
+    
+    loading.value = false
+  } catch (err) {
+    console.error('获取用户信息失败:', err)
+    error.value = err.message || '获取用户信息失败'
+    loading.value = false
+  }
+}
+
+const fetchFavorites = async () => {
+  try {
+    // 使用axios获取收藏数据
+    console.log('获取收藏')
+    const response = await axios.get('/api/users/favorites', {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
+    favorites.value = response.data
+  } catch (err) {
+    console.error('获取收藏失败:', err)
+    // 如果API不存在，使用模拟数据
+    if (err.response?.status === 404) {
       favorites.value = [
         {
           id: 101,
@@ -323,8 +339,22 @@ const fetchUserProfile = async () => {
           image: 'https://via.placeholder.com/300x200?text=收藏2'
         }
       ]
-      
-      // 模拟评价数据
+    }
+  }
+}
+
+const fetchReviews = async () => {
+  try {
+    // 使用axios获取评价数据
+    console.log('获取评价')
+    const response = await axios.get('/api/users/reviews', {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
+    reviews.value = response.data
+  } catch (err) {
+    console.error('获取评价失败:', err)
+    // 如果API不存在，使用模拟数据
+    if (err.response?.status === 404) {
       reviews.value = [
         {
           id: 201,
@@ -339,96 +369,89 @@ const fetchUserProfile = async () => {
           attractionId: 102,
           attractionName: '评价景点2',
           rating: 5,
-          content: '非常推荐这个景点，是我旅行中最难忘的体验之一。',
+          content: '非常推荐这个地方，景色优美，值得一去。',
           date: '2023-06-15T09:45:00Z'
         }
       ]
-      
-      loading.value = false
-    }, 1000)
-    
-  } catch (err) {
-    error.value = '加载用户信息失败，请稍后重试'
-    loading.value = false
-    console.error(err)
+    }
   }
 }
 
 const updateProfile = async () => {
   try {
-    // 这里应该是向API提交数据
-    // await fetch('/api/users/profile', {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(profileForm)
-    // })
+    // 使用axios向API提交数据
+    const response = await axios.put('/api/users/profile', profileForm, {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
     
-    // 模拟成功
+    // 更新store中的用户数据
+    userStore.user = { ...userStore.user, ...response.data }
+    
     alert('个人信息更新成功')
   } catch (err) {
-    alert('更新失败，请稍后重试')
-    console.error(err)
+    alert(err.response?.data?.message || '更新失败，请稍后重试')
+    console.error('更新个人信息失败:', err)
   }
 }
 
 const updatePreferences = async () => {
   try {
-    // 这里应该是向API提交数据
-    // await fetch('/api/users/preferences', {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(preferencesForm)
-    // })
+    // 使用axios向API提交数据
+    const response = await axios.put('/api/users/preferences', preferencesForm, {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
     
-    // 模拟成功
-    alert('偏好设置更新成功')
+    // 更新store中的用户偏好数据
+    userStore.user = { 
+      ...userStore.user, 
+      preferences: response.data 
+    }
+    
+    alert('旅行偏好更新成功')
   } catch (err) {
-    alert('更新失败，请稍后重试')
-    console.error(err)
+    alert(err.response?.data?.message || '更新失败，请稍后重试')
+    console.error('更新旅行偏好失败:', err)
   }
 }
 
-const changePassword = async () => {
+const updatePassword = async () => {
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
     alert('两次输入的密码不一致')
     return
   }
   
   try {
-    // 这里应该是向API提交数据
-    // await fetch('/api/users/password', {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     currentPassword: passwordForm.currentPassword,
-    //     newPassword: passwordForm.newPassword
-    //   })
-    // })
+    // 使用axios向API提交数据
+    await axios.put('/api/users/password', {
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    }, {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
     
-    // 模拟成功
     alert('密码修改成功')
     passwordForm.currentPassword = ''
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
   } catch (err) {
-    alert('密码修改失败，请稍后重试')
-    console.error(err)
+    alert(err.response?.data?.message || '密码修改失败，请稍后重试')
+    console.error('修改密码失败:', err)
   }
 }
 
 const removeFavorite = async (id) => {
   try {
-    // 这里应该是向API提交数据
-    // await fetch(`/api/favorites/${id}`, {
-    //   method: 'DELETE'
-    // })
+    // 使用axios删除收藏
+    await axios.delete(`/api/favorites/${id}`, {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
     
-    // 模拟成功
+    // 更新本地数据
     favorites.value = favorites.value.filter(item => item.id !== id)
     alert('已从收藏中移除')
   } catch (err) {
-    alert('操作失败，请稍后重试')
-    console.error(err)
+    alert(err.response?.data?.message || '操作失败，请稍后重试')
+    console.error('移除收藏失败:', err)
   }
 }
 
@@ -441,17 +464,17 @@ const deleteReview = async (id) => {
   if (!confirm('确定要删除这条评价吗？')) return
   
   try {
-    // 这里应该是向API提交数据
-    // await fetch(`/api/reviews/${id}`, {
-    //   method: 'DELETE'
-    // })
+    // 使用axios删除评价
+    await axios.delete(`/api/reviews/${id}`, {
+      headers: { Authorization: `Bearer ${userStore.token}` }
+    })
     
-    // 模拟成功
+    // 更新本地数据
     reviews.value = reviews.value.filter(item => item.id !== id)
     alert('评价已删除')
   } catch (err) {
-    alert('删除失败，请稍后重试')
-    console.error(err)
+    alert(err.response?.data?.message || '操作失败，请稍后重试')
+    console.error('删除评价失败:', err)
   }
 }
 

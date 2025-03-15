@@ -43,6 +43,9 @@ const authRoutes = require('./routes/authRoutes');
 const attractionRoutes = require('./routes/attractionRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const systemRoutes = require('./routes/systemRoutes');
+const userRoutes = require('./routes/userRoutes');
+const favoriteRoutes = require('./routes/favoriteRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 // 添加一个测试路由
 app.get('/api/test', (req, res) => {
@@ -53,6 +56,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/attractions', attractionRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // 错误处理
 app.use((err, req, res, next) => {

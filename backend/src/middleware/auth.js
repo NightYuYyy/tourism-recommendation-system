@@ -13,12 +13,15 @@ const auth = async (req, res, next) => {
 
     // 验证 token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token解析结果:', decoded);
 
     // 查找用户
     const user = await User.findByPk(decoded.id);
     if (!user) {
       return res.status(401).json({ message: '用户不存在' });
     }
+
+    console.log('认证成功，用户ID:', user.id, '用户角色:', user.role);
 
     // 将用户信息添加到请求对象
     req.user = user;

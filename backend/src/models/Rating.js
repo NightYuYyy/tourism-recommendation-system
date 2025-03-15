@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const User = require('./User');
+const Attraction = require('./Attraction');
 
 const Rating = sequelize.define('Rating', {
   id: {
@@ -10,15 +12,23 @@ const Rating = sequelize.define('Rating', {
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    },
     field: 'user_id'
   },
   attractionId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    references: {
+      model: 'Attractions',
+      key: 'id'
+    },
     field: 'attraction_id'
   },
   rating: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false,
     validate: {
       min: 1,
@@ -26,23 +36,21 @@ const Rating = sequelize.define('Rating', {
     }
   },
   comment: {
-    type: DataTypes.TEXT
-  },
-  images: {
-    type: DataTypes.JSON,
-    defaultValue: []
-  },
-  likes: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('visible', 'hidden', 'pending'),
-    defaultValue: 'visible'
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    defaultValue: 'approved'
+  },
+  moderationReason: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'moderation_reason'
   }
 }, {
   tableName: 'ratings',
-  underscored: true,
+  timestamps: true,
   indexes: [
     {
       unique: true,
@@ -51,14 +59,22 @@ const Rating = sequelize.define('Rating', {
   ],
   hooks: {
     afterCreate: async (rating) => {
-      const Attraction = require('./Attraction');
       await Attraction.updateRating(rating.attractionId);
     },
     afterUpdate: async (rating) => {
-      const Attraction = require('./Attraction');
+      await Attraction.updateRating(rating.attractionId);
+    },
+    afterDestroy: async (rating) => {
       await Attraction.updateRating(rating.attractionId);
     }
   }
 });
+
+// 建立关联关系
+User.hasMany(Rating, { foreignKey: 'userId' });
+Rating.belongsTo(User, { foreignKey: 'userId' });
+
+Attraction.hasMany(Rating, { foreignKey: 'attractionId' });
+Rating.belongsTo(Attraction, { foreignKey: 'attractionId' });
 
 module.exports = Rating;

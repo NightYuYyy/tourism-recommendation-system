@@ -190,8 +190,8 @@
                 <span class="ml-1">热门</span>
               </el-tag>
               <el-tag v-if="attraction.isNew" type="success" effect="dark" size="small">
-                <el-icon><New /></el-icon>
-                <span class="ml-1">新增</span>
+                <el-icon><Star /></el-icon>
+                新上线
               </el-tag>
             </div>
             
@@ -257,10 +257,9 @@ import {
   Timer, 
   ChatDotRound,
   Picture,
-  Star,
-  New
+  Star
 } from '@element-plus/icons-vue'
-import { useAttractionStore } from '../store/modules/attractions'
+import { useAttractionStore } from '../store/attractions'
 import request from '@/utils/request'
 
 const router = useRouter()

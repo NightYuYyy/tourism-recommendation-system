@@ -320,7 +320,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '../store/modules/user'
+import { useUserStore } from '../store/user'
+import { useAttractionStore } from '../store/attractions'
 import { ElMessage } from 'element-plus'
 import { 
   Star, 
@@ -332,13 +333,14 @@ import request from '@/utils/request'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const attractionStore = useAttractionStore()
 
 const attractionId = computed(() => route.params.id)
-const isLoggedIn = computed(() => userStore.isLoggedIn)
+const isLoggedIn = computed(() => userStore.isAuthenticated)
 
-const attraction = ref({})
-const loading = ref(true)
-const error = ref(null)
+const attraction = computed(() => attractionStore.currentAttraction || {})
+const loading = computed(() => attractionStore.loading)
+const error = computed(() => attractionStore.error)
 const nearbyAttractions = ref([])
 
 // 评价相关
@@ -366,21 +368,15 @@ onMounted(() => {
 })
 
 const fetchAttractionDetail = async () => {
-  loading.value = true
-  error.value = null
-  
   try {
-    const { data } = await request.get(`/attractions/${attractionId.value}`)
-    attraction.value = data
+    // 使用store的方法获取景点详情
+    await attractionStore.fetchAttractionById(attractionId.value)
     
     // 获取附近景点
     const { data: nearby } = await request.get(`/attractions/${attractionId.value}/nearby`)
     nearbyAttractions.value = nearby
   } catch (err) {
-    error.value = '加载景点信息失败，请稍后重试'
     console.error(err)
-  } finally {
-    loading.value = false
   }
 }
 

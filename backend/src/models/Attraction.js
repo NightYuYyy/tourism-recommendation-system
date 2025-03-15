@@ -85,22 +85,27 @@ Attraction.findNearby = async function(latitude, longitude, radius = 5) {
 
 // 更新景点评分
 Attraction.updateRating = async function(attractionId) {
-  const result = await sequelize.query(`
-    SELECT AVG(rating) as avgRating, COUNT(*) as ratingCount
-    FROM ratings
-    WHERE attraction_id = ? AND status = 'visible'
-  `, {
-    replacements: [attractionId],
-    type: sequelize.QueryTypes.SELECT
-  });
-
-  if (result && result[0]) {
-    await this.update({
-      avgRating: result[0].avgRating || 0,
-      ratingCount: result[0].ratingCount || 0
-    }, {
-      where: { id: attractionId }
+  try {
+    const Rating = require('./Rating');
+    const attraction = await this.findByPk(attractionId);
+    
+    if (!attraction) return;
+    
+    const ratings = await Rating.findAll({
+      where: { attractionId },
+      attributes: ['rating']
     });
+    
+    if (ratings.length > 0) {
+      const avgRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+      attraction.avgRating = parseFloat(avgRating.toFixed(1));
+    } else {
+      attraction.avgRating = 0;
+    }
+    
+    await attraction.save();
+  } catch (error) {
+    console.error('Error updating attraction rating:', error);
   }
 };
 

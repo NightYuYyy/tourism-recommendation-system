@@ -122,7 +122,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Message, Lock, View, Hide, ChatDotRound, ChatRound, User } from '@element-plus/icons-vue'
+import { Message, Lock, View, Hide, User } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import { useUserStore } from '@/store/user'
 
