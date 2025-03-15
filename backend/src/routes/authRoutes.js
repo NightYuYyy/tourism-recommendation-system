@@ -48,6 +48,19 @@ router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
+    // 验证请求数据
+    if (!username) {
+      return res.status(400).json({ message: '用户名不能为空' });
+    }
+    
+    if (!email) {
+      return res.status(400).json({ message: '邮箱不能为空' });
+    }
+    
+    if (!password) {
+      return res.status(400).json({ message: '密码不能为空' });
+    }
+    
     // 检查用户是否已存在
     const existingUser = await User.findOne({
       where: {
@@ -84,7 +97,21 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: '服务器错误' });
+    
+    // 返回更详细的错误信息
+    if (error.name === 'SequelizeValidationError') {
+      const validationErrors = error.errors.map(err => err.message);
+      return res.status(400).json({ 
+        message: '验证错误', 
+        errors: validationErrors 
+      });
+    }
+    
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ message: '用户名或邮箱已存在' });
+    }
+    
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 });
 

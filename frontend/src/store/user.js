@@ -49,12 +49,15 @@ export const useUserStore = defineStore('user', {
 
     async fetchUserProfile() {
       try {
-        const response = await axios.get('/api/users/profile', {
+        const response = await axios.get('/api/auth/me', {
           headers: { Authorization: `Bearer ${this.token}` }
         })
         this.user = response.data
       } catch (error) {
         this.error = error.response?.data?.message || '获取用户信息失败'
+        if (error.response?.status === 404) {
+          console.error('用户信息API不存在，请检查API路径')
+        }
         throw error
       }
     },

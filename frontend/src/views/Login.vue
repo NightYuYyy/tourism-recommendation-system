@@ -13,6 +13,21 @@
         class="login-form"
         @submit.prevent="handleSubmit"
       >
+        <el-form-item 
+          v-if="!isLogin" 
+          prop="username" 
+          label="用户名"
+        >
+          <el-input
+            v-model="form.username"
+            placeholder="请输入用户名"
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+
         <el-form-item prop="email" label="邮箱">
           <el-input
             v-model="form.email"
@@ -85,24 +100,7 @@
           {{ isLogin ? '登录' : '注册' }}
         </el-button>
 
-        <el-divider>
-          <span>或</span>
-        </el-divider>
 
-        <div class="social-login">
-          <el-button class="w-full mb-3">
-            <template #icon>
-              <el-icon><ChatDotRound /></el-icon>
-            </template>
-            微信登录
-          </el-button>
-          <el-button class="w-full">
-            <template #icon>
-              <el-icon><ChatRound /></el-icon>
-            </template>
-            QQ登录
-          </el-button>
-        </div>
       </el-form>
 
       <div class="login-footer">
@@ -124,8 +122,9 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Message, Lock, View, Hide, ChatDotRound, ChatRound } from '@element-plus/icons-vue'
+import { Message, Lock, View, Hide, ChatDotRound, ChatRound, User } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -135,6 +134,7 @@ const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
 const form = reactive({
+  username: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -142,6 +142,10 @@ const form = reactive({
 })
 
 const rules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, message: '用户名长度不能小于3位', trigger: 'blur' }
+  ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
@@ -171,6 +175,7 @@ const rules = {
 
 const toggleMode = () => {
   isLogin.value = !isLogin.value
+  form.username = ''
   form.email = ''
   form.password = ''
   form.confirmPassword = ''
@@ -186,16 +191,39 @@ const handleSubmit = async () => {
     loading.value = true
     
     const url = isLogin.value ? '/auth/login' : '/auth/register'
-    const { data } = await request.post(url, {
-      email: form.email,
-      password: form.password,
-      remember: form.rememberMe
-    })
+    const requestData = isLogin.value 
+      ? {
+          email: form.email,
+          password: form.password,
+          remember: form.rememberMe
+        }
+      : {
+          username: form.username,
+          email: form.email,
+          password: form.password
+        }
+    
+    const data = await request.post(url, requestData)
+    
+    // 使用Pinia存储用户信息和token
+    const userStore = useUserStore()
+    userStore.token = data.token
+    userStore.user = data.user
+    localStorage.setItem('token', data.token)
     
     ElMessage.success(isLogin.value ? '登录成功' : '注册成功')
     router.push('/')
   } catch (error) {
-    ElMessage.error(error.message || '操作失败，请重试')
+    console.error('操作失败:', error)
+    let errorMsg = '操作失败，请重试'
+    
+    if (error.response && error.response.data) {
+      errorMsg = error.response.data.message || errorMsg
+    } else if (error.message) {
+      errorMsg = error.message
+    }
+    
+    ElMessage.error(errorMsg)
   } finally {
     loading.value = false
   }

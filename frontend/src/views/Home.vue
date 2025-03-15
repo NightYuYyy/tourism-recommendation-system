@@ -29,13 +29,13 @@
     <!-- Featured Attractions -->
     <section class="featured">
       <div class="section-header">
-        <h2>热门景点</h2>
+        <h2>热门景点 ({{ featuredAttractions.length }})</h2>
         <el-link type="primary" :href="'/attractions'">
           查看全部 <el-icon><ArrowRight /></el-icon>
         </el-link>
       </div>
       
-      <el-row :gutter="20">
+      <el-row :gutter="20" v-if="featuredAttractions.length > 0">
         <el-col 
           v-for="attraction in featuredAttractions" 
           :key="attraction.id"
@@ -85,6 +85,8 @@
           </el-card>
         </el-col>
       </el-row>
+      
+      <el-empty v-else description="暂无热门景点数据" />
     </section>
 
     <!-- Categories -->
@@ -130,6 +132,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, ArrowRight, Picture } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
 
 const router = useRouter()
@@ -144,27 +147,113 @@ const categories = ref([
   { id: 6, name: '购物天堂', image: '/images/shopping.jpg' },
 ])
 
-onMounted(async () => {
-  await fetchFeaturedAttractions()
+// 初始化备用数据
+const backupAttractions = [
+  {
+    id: 1,
+    name: '示例景点1',
+    description: '这是一个示例景点描述',
+    image: '/images/default-attraction.jpg',
+    rating: 4.5
+  },
+  {
+    id: 2,
+    name: '示例景点2',
+    description: '这是另一个示例景点描述',
+    image: '/images/default-attraction.jpg',
+    rating: 4.0
+  },
+  {
+    id: 3,
+    name: '示例景点3',
+    description: '这是第三个示例景点描述',
+    image: '/images/default-attraction.jpg',
+    rating: 4.8
+  }
+]
+
+onMounted(() => {
+  console.log('组件已挂载，开始获取热门景点数据')
+  // 确保在组件挂载后立即获取数据
+  fetchFeaturedAttractions()
+  
+  // 如果5秒后仍然没有数据，使用备用数据
+  setTimeout(() => {
+    if (featuredAttractions.value.length === 0) {
+      console.log('5秒后仍无数据，使用备用数据')
+      featuredAttractions.value = backupAttractions
+    }
+  }, 5000)
 })
 
 const fetchFeaturedAttractions = async () => {
   try {
-    const { data } = await request.get('/attractions/featured')
-    featuredAttractions.value = data
+    const response = await request.get('/attractions/featured')
+    console.log('获取到的热门景点数据:', response)
+    
+    // 确保data存在且是数组
+    let data = response || []
+    
+    // 确保数据格式符合前端期望
+    if (Array.isArray(data)) {
+      console.log('数据是数组格式:', data)
+      // 数据已经是数组，直接处理
+    } else if (data && typeof data === 'object') {
+      console.log('数据是对象格式:', data)
+      // 处理返回的数据可能是单个对象或包含attractions数组的对象
+      if (data.attractions) {
+        data = data.attractions
+      } else if (data.data && Array.isArray(data.data)) {
+        data = data.data
+      } else if (data.data && data.data.attractions) {
+        data = data.data.attractions
+      } else {
+        // 如果没有找到数组，将单个对象转为数组
+        data = [data]
+      }
+      console.log('处理后的数据:', data)
+    } else {
+      console.error('数据格式不正确:', data)
+      throw new Error('返回的数据格式不正确')
+    }
+    
+    // 确保data是数组
+    if (!Array.isArray(data)) {
+      console.error('无法解析为数组:', data)
+      throw new Error('无法解析景点数据')
+    }
+    
+    // 如果数组为空，使用备用数据
+    if (data.length === 0) {
+      console.log('数据为空，使用备用数据')
+      throw new Error('数据为空')
+    }
+    
+    // 处理数据
+    console.log('开始处理景点数据，数组长度:', data.length)
+    featuredAttractions.value = data.map(item => {
+      console.log('处理景点项:', item)
+      const processedItem = {
+        id: item.id || Math.floor(Math.random() * 1000),
+        name: item.name || '未命名景点',
+        description: item.description ? (item.description.length > 80 ? item.description.substring(0, 80) + '...' : item.description) : '暂无描述',
+        image: item.image || (item.images && item.images.length > 0 ? item.images[0] : '/images/default-attraction.jpg'),
+        rating: parseFloat(item.rating || item.avgRating || 0)
+      }
+      return processedItem
+    })
+    console.log('处理后的景点数据:', featuredAttractions.value)
+    
+    // 如果处理后的数据为空，使用备用数据
+    if (featuredAttractions.value.length === 0) {
+      console.log('处理后数据为空，使用备用数据')
+      throw new Error('处理后数据为空')
+    }
   } catch (error) {
+    console.error('获取热门景点失败:', error)
     ElMessage.error('获取热门景点失败')
     // 使用示例数据作为后备
-    featuredAttractions.value = [
-      {
-        id: 1,
-        name: '示例景点1',
-        description: '这是一个示例景点描述',
-        image: 'https://example.com/image1.jpg',
-        rating: 4.5
-      },
-      // ... 更多示例数据
-    ]
+    featuredAttractions.value = backupAttractions
   }
 }
 

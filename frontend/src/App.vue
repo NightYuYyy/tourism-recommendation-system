@@ -74,12 +74,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from './store/modules/user'
+import { useUserStore } from './store/user'
 import { Location, User, SwitchButton } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
-const isLoggedIn = ref(false)
+const isLoggedIn = computed(() => userStore.isAuthenticated)
 const currentYear = new Date().getFullYear()
 
 // 用户头像和初始字母
@@ -92,13 +92,20 @@ onMounted(() => {
   checkLoginStatus()
 })
 
-const checkLoginStatus = () => {
+const checkLoginStatus = async () => {
   const token = localStorage.getItem('token')
-  isLoggedIn.value = !!token
-  
-  if (isLoggedIn.value) {
-    userStore.fetchUserProfile()
-    userAvatar.value = userStore.user?.avatar || ''
+  if (token) {
+    userStore.token = token
+    try {
+      await userStore.fetchUserProfile()
+      userAvatar.value = userStore.user?.avatar || ''
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+      // 如果获取用户信息失败，可能是token无效或过期
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        userStore.logout() // 清除无效的token
+      }
+    }
   }
 }
 

@@ -2,9 +2,85 @@ const express = require('express');
 const router = express.Router();
 const Attraction = require('../models/Attraction');
 const Rating = require('../models/Rating');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
+
+// 获取推荐景点
+router.get('/featured', async (req, res) => {
+  try {
+    // 获取评分最高的6个景点
+    const attractions = await Attraction.findAll({
+      order: [['avgRating', 'DESC']],
+      limit: 6,
+      where: {
+        status: 'active'
+      },
+      attributes: [
+        'id', 'name', 'description', 'latitude', 'longitude', 
+        'address', 'city', 'province', 'images', 'price', 
+        'tags', 'avgRating', 'ratingCount'
+      ]
+    });
+
+    // 处理图片数据
+    const processedAttractions = attractions.map(attraction => {
+      const item = attraction.toJSON();
+      
+      // 确保images是数组
+      if (typeof item.images === 'string') {
+        try {
+          item.images = JSON.parse(item.images);
+        } catch (e) {
+          item.images = [];
+        }
+      }
+      
+      // 如果没有图片，使用默认图片
+      if (!item.images || !item.images.length) {
+        item.image = '/images/default-attraction.jpg';
+      } else {
+        item.image = item.images[0];
+      }
+      
+      // 添加rating字段用于前端显示
+      item.rating = item.avgRating;
+      
+      return item;
+    });
+
+    res.json(processedAttractions);
+  } catch (error) {
+    console.error('获取推荐景点错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
+  }
+});
+
+// 获取单个景点详情
+router.get('/:id', async (req, res) => {
+  try {
+    const attraction = await Attraction.findByPk(req.params.id, {
+      include: [{
+        model: Rating,
+        attributes: ['score', 'comment', 'visitDate'],
+        include: [{
+          model: User,
+          attributes: ['username']
+        }]
+      }]
+    });
+
+    if (!attraction) {
+      return res.status(404).json({ message: '景点不存在' });
+    }
+
+    res.json(attraction);
+  } catch (error) {
+    console.error('Get attraction detail error:', error);
+    res.status(500).json({ message: '服务器错误' });
+  }
+});
 
 // 获取景点列表
 router.get('/', async (req, res) => {
@@ -78,31 +154,6 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('获取景点列表错误:', error);
     res.status(500).json({ message: '服务器错误', error: error.message });
-  }
-});
-
-// 获取单个景点详情
-router.get('/:id', async (req, res) => {
-  try {
-    const attraction = await Attraction.findByPk(req.params.id, {
-      include: [{
-        model: Rating,
-        attributes: ['score', 'comment', 'visitDate'],
-        include: [{
-          model: User,
-          attributes: ['username']
-        }]
-      }]
-    });
-
-    if (!attraction) {
-      return res.status(404).json({ message: '景点不存在' });
-    }
-
-    res.json(attraction);
-  } catch (error) {
-    console.error('Get attraction detail error:', error);
-    res.status(500).json({ message: '服务器错误' });
   }
 });
 
