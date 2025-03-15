@@ -14,9 +14,11 @@ const Attraction = sequelize.define('Attraction', {
   description: {
     type: DataTypes.TEXT
   },
-  location: {
-    type: DataTypes.GEOMETRY('POINT'),
-    allowNull: false
+  latitude: {
+    type: DataTypes.DECIMAL(10, 8)
+  },
+  longitude: {
+    type: DataTypes.DECIMAL(11, 8)
   },
   address: {
     type: DataTypes.STRING
@@ -31,47 +33,43 @@ const Attraction = sequelize.define('Attraction', {
     type: DataTypes.JSON,
     defaultValue: []
   },
-  openingHours: {
-    type: DataTypes.JSON
-  },
-  ticketPrice: {
+  price: {
     type: DataTypes.DECIMAL(10, 2)
-  },
-  category: {
-    type: DataTypes.STRING
   },
   tags: {
     type: DataTypes.JSON,
     defaultValue: []
   },
-  averageRating: {
-    type: DataTypes.DECIMAL(2, 1),
+  avgRating: {
+    type: DataTypes.DECIMAL(3, 2),
     defaultValue: 0
   },
-  totalRatings: {
+  ratingCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  visitCount: {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
   status: {
-    type: DataTypes.ENUM('active', 'inactive', 'maintenance'),
+    type: DataTypes.ENUM('active', 'inactive', 'pending'),
     defaultValue: 'active'
   }
 }, {
-  indexes: [
-    {
-      type: 'SPATIAL',
-      fields: ['location']
-    }
-  ]
+  tableName: 'attractions',
+  underscored: true,
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 });
 
 // 类方法
 Attraction.findNearby = async function(latitude, longitude, radius) {
   const query = `
     SELECT id, name, 
-           ST_Distance_Sphere(location, ST_GeomFromText('POINT(${longitude} ${latitude})')) as distance
-    FROM Attractions
-    WHERE ST_Distance_Sphere(location, ST_GeomFromText('POINT(${longitude} ${latitude})')) <= ${radius}
+           SQRT(POW(latitude - ${latitude}, 2) + POW(longitude - ${longitude}, 2)) * 111.32 as distance
+    FROM attractions
+    WHERE SQRT(POW(latitude - ${latitude}, 2) + POW(longitude - ${longitude}, 2)) * 111.32 <= ${radius}
     ORDER BY distance;
   `;
   

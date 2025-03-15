@@ -1,12 +1,19 @@
 <template>
   <div class="attractions-page">
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <h1>探索景点</h1>
+      <p>发现令人惊叹的旅游胜地，开启您的完美旅程</p>
+    </div>
+    
     <!-- 搜索和筛选区域 -->
-    <section class="filter-section">
+    <el-card class="filter-section">
       <div class="search-box">
-        <input
+        <el-input
           v-model="filters.search"
-          type="text"
           placeholder="搜索景点..."
+          prefix-icon="Search"
+          clearable
           @input="handleSearch"
         />
       </div>
@@ -27,88 +34,120 @@
           <el-option label="最多评论" value="comments" />
         </el-select>
         
-        <el-slider
-          v-model="filters.priceRange"
-          range
-          :min="0"
-          :max="1000"
-          :step="50"
-        />
+        <div class="price-filter">
+          <span class="filter-label">价格范围</span>
+          <el-slider
+            v-model="filters.priceRange"
+            range
+            :min="0"
+            :max="1000"
+            :step="50"
+            :marks="{0: '¥0', 500: '¥500', 1000: '¥1000'}"
+          />
+        </div>
       </div>
-    </section>
+    </el-card>
+
+    <!-- 加载状态 -->
+    <div v-if="attractionStore.loading" class="loading-container">
+      <el-skeleton :rows="5" animated />
+    </div>
+
+    <!-- 错误状态 -->
+    <el-alert
+      v-if="attractionStore.error"
+      :title="attractionStore.error"
+      type="error"
+      show-icon
+      :closable="false"
+      class="mb-lg"
+    />
 
     <!-- 景点列表 -->
-    <section class="attractions-grid">
-      <div 
-        v-for="attraction in filteredAttractions"
-        :key="attraction.id"
-        class="attraction-card"
-        @click="viewDetail(attraction.id)"
-      >
-        <div class="card-image">
-          <img :src="attraction.image" :alt="attraction.name" />
-          <div class="card-badges">
-            <span class="badge" v-if="attraction.isPopular">热门</span>
-            <span class="badge" v-if="attraction.isNew">新增</span>
-          </div>
-        </div>
-        
-        <div class="card-content">
-          <h3>{{ attraction.name }}</h3>
-          <p class="description">{{ attraction.description }}</p>
-          
-          <div class="meta-info">
-            <div class="rating">
-              <el-rate v-model="attraction.rating" disabled />
-              <span>{{ attraction.rating }}分</span>
-            </div>
-            <div class="price">
-              <span class="currency">¥</span>
-              <span class="amount">{{ attraction.price }}</span>
-            </div>
-          </div>
-          
-          <div class="tags">
-            <el-tag 
-              v-for="tag in attraction.tags"
-              :key="tag"
-              size="small"
-            >
-              {{ tag }}
-            </el-tag>
-          </div>
-        </div>
+    <div v-if="!attractionStore.loading && !attractionStore.error">
+      <div v-if="attractions.length === 0" class="empty-state">
+        <el-empty description="暂无符合条件的景点" />
       </div>
-    </section>
+      
+      <div v-else class="attractions-grid">
+        <el-card
+          v-for="attraction in attractions"
+          :key="attraction.id"
+          class="attraction-card"
+          :body-style="{ padding: '0' }"
+          @click="viewDetail(attraction.id)"
+        >
+          <div class="card-image">
+            <el-image 
+              :src="attraction.image || 'https://via.placeholder.com/300x200?text=景点图片'" 
+              :alt="attraction.name"
+              fit="cover"
+            />
+            <div class="card-badges">
+              <el-tag v-if="attraction.isPopular" type="danger" effect="dark" size="small">热门</el-tag>
+              <el-tag v-if="attraction.isNew" type="success" effect="dark" size="small">新增</el-tag>
+            </div>
+          </div>
+          
+          <div class="card-content">
+            <h3>{{ attraction.name }}</h3>
+            <p class="description">{{ attraction.description }}</p>
+            
+            <div class="meta-info">
+              <div class="rating">
+                <el-rate v-model="attraction.rating" disabled />
+                <span>{{ attraction.rating }}分</span>
+              </div>
+              <div class="price">
+                <span class="currency">¥</span>
+                <span class="amount">{{ attraction.price }}</span>
+              </div>
+            </div>
+            
+            <div class="tags">
+              <el-tag 
+                v-for="tag in attraction.tags"
+                :key="tag"
+                size="small"
+                effect="plain"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
+          </div>
+        </el-card>
+      </div>
 
-    <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[12, 24, 36, 48]"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <!-- 分页 -->
+      <div class="pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[12, 24, 36, 48]"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useStore } from 'vuex'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
+import { useAttractionStore } from '../store/modules/attractions'
 
-const store = useStore()
 const router = useRouter()
+const attractionStore = useAttractionStore()
 
 // 分页相关
 const currentPage = ref(1)
 const pageSize = ref(12)
-const total = ref(0)
+const total = computed(() => attractionStore.pagination.total)
 
 // 筛选条件
 const filters = reactive({
@@ -127,24 +166,29 @@ const categories = [
   { value: 'shopping', label: '购物中心' }
 ]
 
+// 计算属性：景点列表
+const attractions = computed(() => {
+  return attractionStore.attractions
+})
+
 // 获取景点数据
 const fetchData = async () => {
   try {
     const params = {
       page: currentPage.value,
-      pageSize: pageSize.value,
-      ...filters
+      limit: pageSize.value,
+      search: filters.search,
+      category: filters.category,
+      sortBy: filters.sortBy,
+      minPrice: filters.priceRange[0],
+      maxPrice: filters.priceRange[1]
     }
-    await store.dispatch('fetchAttractions', params)
+    
+    await attractionStore.fetchAttractions(params)
   } catch (error) {
-    ElMessage.error('获取景点数据失败')
+    console.error('获取景点数据失败', error)
   }
 }
-
-// 计算属性：过滤后的景点列表
-const filteredAttractions = computed(() => {
-  return store.state.attractions
-})
 
 // 事件处理
 const handleSearch = () => {
@@ -166,6 +210,12 @@ const viewDetail = (id) => {
   router.push(`/attractions/${id}`)
 }
 
+// 监听筛选条件变化
+watch([() => filters.category, () => filters.sortBy, () => filters.priceRange], () => {
+  currentPage.value = 1
+  fetchData()
+}, { deep: true })
+
 // 生命周期钩子
 onMounted(() => {
   fetchData()
@@ -179,36 +229,51 @@ onMounted(() => {
   padding: @spacing-lg;
 }
 
+.page-header {
+  text-align: center;
+  margin-bottom: @spacing-xl;
+  
+  h1 {
+    font-size: 32px;
+    margin-bottom: @spacing-sm;
+    color: @text-color;
+  }
+  
+  p {
+    font-size: @font-size-lg;
+    color: @text-color-secondary;
+  }
+}
+
 .filter-section {
   margin-bottom: @spacing-xl;
-  padding: @spacing-lg;
-  background: @bg-color;
-  border-radius: @border-radius-lg;
-  box-shadow: @box-shadow-base;
-
+  
   .search-box {
     margin-bottom: @spacing-lg;
-    
-    input {
-      width: 100%;
-      height: 44px;
-      padding: 0 @spacing-lg;
-      border: 1px solid @border-color;
-      border-radius: @border-radius-base;
-      font-size: @font-size-lg;
-      
-      &:focus {
-        border-color: @primary-color;
-        box-shadow: 0 0 0 3px fade(@primary-color, 10%);
-      }
-    }
   }
-
+  
   .filter-options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: @spacing-lg;
+    
+    .price-filter {
+      .filter-label {
+        display: block;
+        margin-bottom: @spacing-sm;
+        color: @text-color-secondary;
+      }
+    }
   }
+}
+
+.loading-container {
+  padding: @spacing-xl;
+}
+
+.empty-state {
+  padding: @spacing-xl;
+  text-align: center;
 }
 
 .attractions-grid {
@@ -230,9 +295,8 @@ onMounted(() => {
 }
 
 .attraction-card {
-  .card();
   cursor: pointer;
-  .hover-transition();
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   
   &:hover {
     transform: translateY(-4px);
@@ -241,15 +305,12 @@ onMounted(() => {
 
   .card-image {
     position: relative;
-    aspect-ratio: 16/9;
+    height: 200px;
     overflow: hidden;
-    border-radius: @border-radius-base @border-radius-base 0 0;
-
-    img {
+    
+    .el-image {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      .hover-transition();
     }
 
     .card-badges {
@@ -258,14 +319,6 @@ onMounted(() => {
       right: @spacing-sm;
       display: flex;
       gap: @spacing-xs;
-
-      .badge {
-        padding: @spacing-xs @spacing-sm;
-        background: rgba(0, 0, 0, 0.6);
-        color: white;
-        border-radius: @border-radius-sm;
-        font-size: @font-size-sm;
-      }
     }
   }
 
@@ -282,6 +335,7 @@ onMounted(() => {
       color: @text-color-secondary;
       .multi-ellipsis(2);
       margin-bottom: @spacing-md;
+      min-height: 42px;
     }
 
     .meta-info {

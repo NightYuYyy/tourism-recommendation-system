@@ -41,11 +41,15 @@ export const useAttractionStore = defineStore('attractions', {
           ...this.pagination,
           ...params
         }
+        console.log('发送请求参数:', queryParams)
         const response = await axios.get('/api/attractions', { params: queryParams })
-        this.attractions = response.data.attractions
-        this.pagination.total = response.data.total
+        console.log('API响应:', response.data)
+        this.attractions = response.data.data || []
+        this.pagination.total = response.data.total || 0
+        this.pagination.page = response.data.currentPage || 1
         return response.data
       } catch (error) {
+        console.error('获取景点列表错误:', error)
         this.error = error.response?.data?.message || '获取景点列表失败'
         throw error
       } finally {

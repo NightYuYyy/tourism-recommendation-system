@@ -3,6 +3,8 @@ const router = express.Router();
 const Attraction = require('../models/Attraction');
 const Rating = require('../models/Rating');
 const auth = require('../middleware/auth');
+const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 
 // 获取景点列表
 router.get('/', async (req, res) => {
@@ -12,31 +14,59 @@ router.get('/', async (req, res) => {
       limit = 10,
       category,
       search,
-      sort = 'averageRating',
-      order = 'DESC'
+      sortBy = 'averageRating',
+      order = 'DESC',
+      minPrice = 0,
+      maxPrice = 1000
     } = req.query;
+
+    console.log('查询参数:', req.query);
 
     const offset = (page - 1) * limit;
     const where = {};
 
-    if (category) {
-      where.category = category;
-    }
+    // 由于数据库中没有category字段，我们可以使用tags字段进行过滤
+    // if (category && category !== '') {
+    //   where.category = category;
+    // }
 
-    if (search) {
+    if (search && search !== '') {
       where.name = {
         [Op.like]: `%${search}%`
       };
     }
 
+    // 添加价格范围过滤
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      where.price = {
+        [Op.between]: [parseFloat(minPrice), parseFloat(maxPrice)]
+      };
+    }
+
+    console.log('构建的查询条件:', where);
+
+    // 检查数据库表结构已完成，不再需要
+    // try {
+    //   const tableInfo = await sequelize.query('DESCRIBE attractions', { type: sequelize.QueryTypes.SELECT });
+    //   console.log('表结构:', tableInfo);
+    // } catch (err) {
+    //   console.error('获取表结构失败:', err);
+    // }
+
+    // 不再需要删除价格过滤条件
+    // delete where.ticketPrice;
+
     const attractions = await Attraction.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [[sort, order]],
-      attributes: {
-        exclude: ['createdAt', 'updatedAt']
-      }
+      order: [[sortBy === 'rating' ? 'avgRating' : sortBy, order]],
+      attributes: [
+        'id', 'name', 'description', 'latitude', 'longitude', 
+        'address', 'city', 'province', 'images', 'price', 
+        'tags', 'avgRating', 'ratingCount', 
+        'visitCount', 'status'
+      ]
     });
 
     res.json({
@@ -46,8 +76,8 @@ router.get('/', async (req, res) => {
       data: attractions.rows
     });
   } catch (error) {
-    console.error('Get attractions error:', error);
-    res.status(500).json({ message: '服务器错误' });
+    console.error('获取景点列表错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 });
 

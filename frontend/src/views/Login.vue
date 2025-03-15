@@ -154,7 +154,7 @@ const handleSubmit = async () => {
 .login-container {
   width: 100%;
   max-width: 480px;
-  background: @background-color;
+  background: @bg-color;
   border-radius: @border-radius-lg;
   box-shadow: @box-shadow-lg;
   padding: @spacing-xl;
@@ -277,7 +277,7 @@ const handleSubmit = async () => {
   }
 
   span {
-    background: @background-color;
+    background: @bg-color;
     padding: 0 @spacing-md;
     color: @text-color-secondary;
   }
