@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+      "@f4ww4z-mcp-mysql-server": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "npx",
+          "-y",
+          "@smithery/cli@latest",
+          "run",
+          "@f4ww4z/mcp-mysql-server",
+          "--config",
+          "{\"mysqlHost\":\"149.88.80.218\",\"mysqlUser\":\"tourism_db\",\"mysqlDatabase\":\"tourism_db\",\"mysqlPassword\":\"2219260993\"}"
+        ]
+      }
+    }
+  }

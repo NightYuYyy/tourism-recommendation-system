@@ -1,75 +1,127 @@
 <template>
   <div class="home">
     <!-- Hero Section -->
-    <section class="hero">
+    <el-card class="hero" :body-style="{ padding: 0 }">
       <div class="hero-content">
         <h1>发现精彩景点</h1>
         <p>基于个性化推荐算法，为您推荐最适合的旅游目的地</p>
         <div class="search-box">
-          <input
+          <el-input
             v-model="searchQuery"
-            type="text"
             placeholder="搜索景点..."
+            size="large"
+            clearable
             @keyup.enter="handleSearch"
-          />
-          <button class="btn btn-primary" @click="handleSearch">
-            搜索
-          </button>
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+            <template #append>
+              <el-button type="primary" @click="handleSearch">
+                搜索
+              </el-button>
+            </template>
+          </el-input>
         </div>
       </div>
-    </section>
+    </el-card>
 
     <!-- Featured Attractions -->
     <section class="featured">
       <div class="section-header">
         <h2>热门景点</h2>
-        <router-link to="/attractions" class="view-all">
-          查看全部 →
-        </router-link>
+        <el-link type="primary" :href="'/attractions'">
+          查看全部 <el-icon><ArrowRight /></el-icon>
+        </el-link>
       </div>
       
-      <div class="attractions-grid">
-        <div 
+      <el-row :gutter="20">
+        <el-col 
           v-for="attraction in featuredAttractions" 
-          :key="attraction.id" 
-          class="attraction-card"
+          :key="attraction.id"
+          :xs="24"
+          :sm="12"
+          :md="8"
+          class="mb-4"
         >
-          <div class="card-image">
-            <img :src="attraction.image" :alt="attraction.name" />
-          </div>
-          <div class="card-content">
-            <h3>{{ attraction.name }}</h3>
-            <p>{{ attraction.description }}</p>
-            <div class="card-footer">
-              <div class="rating">
-                <el-rate v-model="attraction.rating" disabled></el-rate>
-                <span>{{ attraction.rating }}</span>
+          <el-card 
+            class="attraction-card" 
+            :body-style="{ padding: '0px' }"
+            shadow="hover"
+          >
+            <el-image
+              :src="attraction.image"
+              :alt="attraction.name"
+              fit="cover"
+              class="card-image"
+            >
+              <template #error>
+                <div class="image-slot">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+            <div class="card-content">
+              <h3>{{ attraction.name }}</h3>
+              <p>{{ attraction.description }}</p>
+              <div class="card-footer">
+                <div class="rating">
+                  <el-rate 
+                    v-model="attraction.rating" 
+                    disabled 
+                    show-score
+                    text-color="#ff9900"
+                  />
+                </div>
+                <el-button 
+                  type="primary" 
+                  text
+                  @click="viewDetail(attraction.id)"
+                >
+                  查看详情
+                </el-button>
               </div>
-              <button 
-                class="btn btn-text"
-                @click="viewDetail(attraction.id)"
-              >
-                查看详情
-              </button>
             </div>
-          </div>
-        </div>
-      </div>
+          </el-card>
+        </el-col>
+      </el-row>
     </section>
 
     <!-- Categories -->
     <section class="categories">
       <h2>景点分类</h2>
-      <div class="categories-grid">
-        <div 
+      <el-row :gutter="20">
+        <el-col 
           v-for="category in categories" 
           :key="category.id"
-          class="category-card"
+          :xs="12"
+          :sm="8"
+          :md="4"
+          class="mb-4"
         >
-          <img :src="category.image" :alt="category.name" />
-          <span class="category-name">{{ category.name }}</span>
-        </div>
-      </div>
+          <el-card 
+            class="category-card" 
+            shadow="hover"
+            :body-style="{ padding: '0px' }"
+          >
+            <el-image
+              :src="category.image"
+              :alt="category.name"
+              fit="cover"
+              class="category-image"
+            >
+              <template #error>
+                <div class="image-slot">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+            <div class="category-content">
+              <span class="category-name">{{ category.name }}</span>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
     </section>
   </div>
 </template>
@@ -77,6 +129,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { Search, ArrowRight, Picture } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -95,17 +149,23 @@ onMounted(async () => {
 })
 
 const fetchFeaturedAttractions = async () => {
-  // TODO: 从API获取热门景点数据
-  featuredAttractions.value = [
-    {
-      id: 1,
-      name: '示例景点1',
-      description: '这是一个示例景点描述',
-      image: 'https://example.com/image1.jpg',
-      rating: 4.5
-    },
-    // ... 更多示例数据
-  ]
+  try {
+    const { data } = await request.get('/attractions/featured')
+    featuredAttractions.value = data
+  } catch (error) {
+    ElMessage.error('获取热门景点失败')
+    // 使用示例数据作为后备
+    featuredAttractions.value = [
+      {
+        id: 1,
+        name: '示例景点1',
+        description: '这是一个示例景点描述',
+        image: 'https://example.com/image1.jpg',
+        rating: 4.5
+      },
+      // ... 更多示例数据
+    ]
+  }
 }
 
 const handleSearch = () => {
@@ -123,192 +183,134 @@ const viewDetail = (id) => {
 </script>
 
 <style lang="less" scoped>
-@import '../styles/variables.less';
-
 .home {
   .section-header {
-    .flex-between();
-    margin-bottom: @spacing-lg;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
   }
 }
 
 .hero {
   position: relative;
-  background: linear-gradient(135deg, @primary-color 0%, @primary-color-dark 100%);
-  border-radius: @border-radius-lg;
+  background: var(--el-color-primary-light-3);
+  margin-bottom: 32px;
   overflow: hidden;
-  margin-bottom: @spacing-xl;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('/images/hero-pattern.svg');
-    opacity: 0.1;
-  }
 
   &-content {
     position: relative;
     max-width: 800px;
     margin: 0 auto;
-    padding: @spacing-xl;
+    padding: 48px 24px;
     text-align: center;
-    color: @text-color-inverse;
+    color: var(--el-color-white);
 
     h1 {
       font-size: 48px;
-      margin-bottom: @spacing-md;
+      margin-bottom: 16px;
     }
 
     p {
-      font-size: @font-size-lg;
-      margin-bottom: @spacing-lg;
+      font-size: 18px;
+      margin-bottom: 24px;
+      opacity: 0.9;
     }
   }
 }
 
 .search-box {
-  display: flex;
   max-width: 600px;
   margin: 0 auto;
-  gap: @spacing-xs;
 
-  input {
-    flex: 1;
-    height: 48px;
-    padding: 0 @spacing-lg;
-    border-radius: @border-radius-lg;
-    border: none;
-    font-size: @font-size-lg;
+  :deep(.el-input__wrapper) {
+    background-color: var(--el-color-white);
+  }
 
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px fade(@primary-color-light, 50%);
+  :deep(.el-input-group__append) {
+    padding: 0;
+    
+    .el-button {
+      margin: 0;
+      border: none;
+      height: 40px;
+      padding: 0 20px;
     }
-  }
-
-  button {
-    height: 48px;
-    padding: 0 @spacing-lg;
-    font-size: @font-size-lg;
-  }
-}
-
-.attractions-grid {
-  display: grid;
-  gap: @spacing-lg;
-  
-  @media (min-width: @screen-sm) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  @media (min-width: @screen-lg) {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 
 .attraction-card {
-  .card();
-  overflow: hidden;
-
+  height: 100%;
+  
   .card-image {
-    aspect-ratio: 16/9;
-    overflow: hidden;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      .hover-transition();
-    }
-  }
-
-  &:hover {
-    .card-image img {
-      transform: scale(1.05);
-    }
+    width: 100%;
+    height: 200px;
   }
 
   .card-content {
-    padding: @spacing-md;
+    padding: 16px;
 
     h3 {
-      font-size: @font-size-lg;
-      margin-bottom: @spacing-xs;
-      .text-ellipsis();
+      font-size: 18px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     p {
-      color: @text-color-secondary;
-      .multi-ellipsis(2);
-      margin-bottom: @spacing-md;
+      color: var(--el-text-color-secondary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 16px;
     }
   }
 
   .card-footer {
-    .flex-between();
-
-    .rating {
-      .flex-center();
-      gap: @spacing-xs;
-    }
-  }
-}
-
-.categories {
-  margin-top: @spacing-xl;
-
-  h2 {
-    margin-bottom: @spacing-lg;
-  }
-}
-
-.categories-grid {
-  display: grid;
-  gap: @spacing-md;
-  grid-template-columns: repeat(2, 1fr);
-  
-  @media (min-width: @screen-sm) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  @media (min-width: @screen-lg) {
-    grid-template-columns: repeat(6, 1fr);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 
 .category-card {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: @border-radius-lg;
-  overflow: hidden;
-  .hover-transition();
+  cursor: pointer;
+  transition: transform 0.3s;
 
   &:hover {
-    transform: translateY(-4px);
-
-    img {
-      transform: scale(1.1);
-    }
+    transform: translateY(-5px);
   }
 
-  img {
+  .category-image {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    .hover-transition();
+    height: 120px;
+  }
+
+  .category-content {
+    padding: 12px;
+    text-align: center;
   }
 
   .category-name {
-    position: absolute;
-    inset: 0;
-    .flex-center();
-    background: rgba(0, 0, 0, 0.4);
-    color: @text-color-inverse;
+    font-size: 16px;
     font-weight: 500;
   }
+}
+
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 30px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
 }
 </style>

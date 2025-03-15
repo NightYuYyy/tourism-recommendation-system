@@ -1,5 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const compression = require('compression');
 const dotenv = require('dotenv');
 
 // 加载环境变量
@@ -19,14 +23,26 @@ const corsOptions = {
   credentials: true
 };
 
-// 中间件
+// 基础中间件
+app.use(helmet());
 app.use(cors(corsOptions));
+app.use(compression());
+app.use(morgan('dev'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 速率限制
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: 100 // 限制每个IP 100个请求
+});
+app.use(limiter);
 
 // 路由
 const authRoutes = require('./routes/authRoutes');
 const attractionRoutes = require('./routes/attractionRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
+const systemRoutes = require('./routes/systemRoutes');
 
 // 添加一个测试路由
 app.get('/api/test', (req, res) => {
@@ -36,13 +52,23 @@ app.get('/api/test', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/attractions', attractionRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/system', systemRoutes);
 
-// 错误处理中间件
+// 错误处理
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
-    message: '服务器发生错误', 
-    error: process.env.NODE_ENV === 'production' ? {} : err.stack 
+    success: false, 
+    message: '服务器内部错误',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// 404处理
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: '未找到请求的资源' 
   });
 });
 

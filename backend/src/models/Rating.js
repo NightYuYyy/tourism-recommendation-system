@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./User');
-const Attraction = require('./Attraction');
 
 const Rating = sequelize.define('Rating', {
   id: {
@@ -12,20 +10,14 @@ const Rating = sequelize.define('Rating', {
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    references: {
-      model: User,
-      key: 'id'
-    }
+    field: 'user_id'
   },
   attractionId: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    references: {
-      model: Attraction,
-      key: 'id'
-    }
+    field: 'attraction_id'
   },
-  score: {
+  rating: {
     type: DataTypes.INTEGER,
     allowNull: false,
     validate: {
@@ -36,45 +28,37 @@ const Rating = sequelize.define('Rating', {
   comment: {
     type: DataTypes.TEXT
   },
-  visitDate: {
-    type: DataTypes.DATE
+  images: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  likes: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  status: {
+    type: DataTypes.ENUM('visible', 'hidden', 'pending'),
+    defaultValue: 'visible'
   }
 }, {
+  tableName: 'ratings',
+  underscored: true,
   indexes: [
     {
       unique: true,
-      fields: ['userId', 'attractionId']
+      fields: ['user_id', 'attraction_id']
     }
   ],
   hooks: {
     afterCreate: async (rating) => {
-      await updateAttractionRating(rating.attractionId);
+      const Attraction = require('./Attraction');
+      await Attraction.updateRating(rating.attractionId);
     },
     afterUpdate: async (rating) => {
-      await updateAttractionRating(rating.attractionId);
+      const Attraction = require('./Attraction');
+      await Attraction.updateRating(rating.attractionId);
     }
   }
 });
-
-// 关联关系
-Rating.belongsTo(User);
-Rating.belongsTo(Attraction);
-
-// 更新景点平均评分的辅助函数
-async function updateAttractionRating(attractionId) {
-  const ratings = await Rating.findAll({
-    where: { attractionId }
-  });
-  
-  const totalScore = ratings.reduce((sum, rating) => sum + rating.score, 0);
-  const averageRating = totalScore / ratings.length;
-  
-  await Attraction.update({
-    averageRating,
-    totalRatings: ratings.length
-  }, {
-    where: { id: attractionId }
-  });
-}
 
 module.exports = Rating;

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { User } = require('../models/User')
+const User = require('../models/User')
 const config = require('../config/database')
 
 // 用户注册

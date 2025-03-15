@@ -1,127 +1,319 @@
 <template>
   <div class="attraction-detail">
+    <!-- 加载状态 -->
     <div v-if="loading" class="loading">
-      <el-skeleton :rows="10" animated />
+      <el-skeleton :loading="true" animated>
+        <template #template>
+          <div class="skeleton-content">
+            <el-skeleton-item variant="image" style="width: 100%; height: 400px; margin-bottom: 20px;" />
+            <el-skeleton-item variant="h1" style="width: 50%" />
+            <div style="margin: 20px 0">
+              <el-skeleton-item variant="text" style="width: 80%" />
+              <el-skeleton-item variant="text" style="width: 60%" />
+            </div>
+            <el-row :gutter="20">
+              <el-col :span="16">
+                <el-skeleton-item variant="text" style="width: 100%; height: 300px" />
+              </el-col>
+              <el-col :span="8">
+                <el-skeleton-item variant="text" style="width: 100%; height: 300px" />
+              </el-col>
+            </el-row>
+          </div>
+        </template>
+      </el-skeleton>
     </div>
     
-    <div v-else-if="error" class="error">
-      <h2>加载失败</h2>
-      <p>{{ error }}</p>
-      <button class="btn btn-primary" @click="fetchAttractionDetail">重试</button>
-    </div>
+    <!-- 错误状态 -->
+    <el-result
+      v-else-if="error"
+      icon="error"
+      :title="error"
+      sub-title="请稍后重试"
+    >
+      <template #extra>
+        <el-button type="primary" @click="fetchAttractionDetail">
+          重试
+        </el-button>
+      </template>
+    </el-result>
     
-    <div v-else class="attraction-content">
+    <!-- 景点内容 -->
+    <template v-else>
       <!-- 景点头部信息 -->
-      <div class="attraction-header">
-        <div class="image-gallery">
-          <img :src="attraction.image || 'https://via.placeholder.com/800x400?text=景点图片'" :alt="attraction.name" class="main-image">
-        </div>
+      <el-card class="attraction-header">
+        <el-carousel 
+          v-if="attraction.images?.length"
+          height="400px"
+          :interval="4000"
+          type="card"
+        >
+          <el-carousel-item v-for="image in attraction.images" :key="image">
+            <el-image 
+              :src="image" 
+              fit="cover"
+              :preview-src-list="attraction.images"
+            />
+          </el-carousel-item>
+        </el-carousel>
+        <el-image
+          v-else
+          :src="attraction.image || 'https://via.placeholder.com/800x400?text=景点图片'"
+          :alt="attraction.name"
+          fit="cover"
+          class="main-image"
+          :preview-src-list="[attraction.image]"
+        />
         
         <div class="attraction-info">
-          <h1>{{ attraction.name }}</h1>
+          <el-page-header 
+            :title="attraction.name"
+            @back="router.back()"
+          >
+            <template #content>
+              <div class="flex items-center">
+                <el-tag v-if="attraction.isPopular" type="danger" effect="dark" class="mr-2">
+                  <el-icon><Star /></el-icon>
+                  <span class="ml-1">热门</span>
+                </el-tag>
+                <span class="page-header__title">{{ attraction.name }}</span>
+              </div>
+            </template>
+          </el-page-header>
           
           <div class="meta-info">
             <div class="rating">
-              <el-rate v-model="attraction.rating" disabled />
-              <span>{{ attraction.rating }} ({{ attraction.reviewCount || 0 }}条评价)</span>
+              <el-rate 
+                v-model="attraction.rating" 
+                disabled 
+                show-score
+                text-color="#ff9900"
+              />
+              <span class="review-count">({{ attraction.reviewCount || 0 }}条评价)</span>
             </div>
             
             <div class="tags">
-              <el-tag v-for="tag in attraction.tags" :key="tag" size="small">{{ tag }}</el-tag>
+              <el-tag 
+                v-for="tag in attraction.tags" 
+                :key="tag" 
+                class="mr-2"
+                effect="plain"
+              >
+                {{ tag }}
+              </el-tag>
             </div>
             
             <div class="location">
-              <i class="el-icon-location"></i>
-              <span>{{ attraction.location }}</span>
+              <el-link :underline="false" type="info">
+                <el-icon><Location /></el-icon>
+                <span>{{ attraction.location }}</span>
+              </el-link>
             </div>
           </div>
         </div>
-      </div>
+      </el-card>
       
       <!-- 景点详细信息 -->
-      <div class="detail-content">
-        <div class="main-content">
-          <section class="description">
-            <h2>景点介绍</h2>
-            <p>{{ attraction.description }}</p>
-          </section>
-          
-          <section class="features">
-            <h2>特色亮点</h2>
-            <ul>
-              <li v-for="(feature, index) in attraction.features" :key="index">
-                {{ feature }}
-              </li>
-            </ul>
-          </section>
-          
-          <section class="tips">
-            <h2>游玩贴士</h2>
-            <div class="tip-item" v-for="(tip, index) in attraction.tips" :key="index">
-              <h3>{{ tip.title }}</h3>
-              <p>{{ tip.content }}</p>
-            </div>
-          </section>
-          
-          <section class="reviews">
-            <h2>游客评价</h2>
-            <div class="review-item" v-for="review in attraction.reviews" :key="review.id">
-              <div class="review-header">
-                <span class="reviewer">{{ review.username }}</span>
-                <el-rate v-model="review.rating" disabled />
-                <span class="review-date">{{ review.date }}</span>
-              </div>
-              <p class="review-content">{{ review.content }}</p>
-            </div>
+      <el-row :gutter="20" class="detail-content">
+        <el-col :span="16" class="main-content">
+          <el-tabs>
+            <el-tab-pane label="景点介绍">
+              <el-card class="mb-4">
+                <template #header>
+                  <div class="card-header">
+                    <span>景点介绍</span>
+                  </div>
+                </template>
+                <p>{{ attraction.description }}</p>
+              </el-card>
+              
+              <el-card class="mb-4">
+                <template #header>
+                  <div class="card-header">
+                    <span>特色亮点</span>
+                  </div>
+                </template>
+                <el-timeline>
+                  <el-timeline-item
+                    v-for="(feature, index) in attraction.features"
+                    :key="index"
+                    :type="['primary', 'success', 'warning', 'danger'][index % 4]"
+                  >
+                    {{ feature }}
+                  </el-timeline-item>
+                </el-timeline>
+              </el-card>
+              
+              <el-card class="mb-4">
+                <template #header>
+                  <div class="card-header">
+                    <span>游玩贴士</span>
+                  </div>
+                </template>
+                <el-collapse>
+                  <el-collapse-item
+                    v-for="(tip, index) in attraction.tips"
+                    :key="index"
+                    :title="tip.title"
+                  >
+                    {{ tip.content }}
+                  </el-collapse-item>
+                </el-collapse>
+              </el-card>
+            </el-tab-pane>
             
-            <div class="add-review" v-if="isLoggedIn">
-              <h3>添加评价</h3>
-              <div class="rating-input">
-                <span>评分：</span>
-                <el-rate v-model="userRating" />
-              </div>
-              <el-input
-                type="textarea"
-                v-model="userReview"
-                placeholder="分享您的游玩体验..."
-                :rows="4"
-              />
-              <button class="btn btn-primary" @click="submitReview">提交评价</button>
-            </div>
-            
-            <div v-else class="login-prompt">
-              <router-link to="/login" class="btn btn-text">登录后发表评价</router-link>
-            </div>
-          </section>
-        </div>
-        
-        <div class="sidebar">
-          <div class="card opening-hours">
-            <h3>开放时间</h3>
-            <p>{{ attraction.openingHours || '暂无信息' }}</p>
-          </div>
-          
-          <div class="card ticket-info">
-            <h3>门票信息</h3>
-            <p class="price">¥{{ attraction.price || '免费' }}</p>
-            <button class="btn btn-primary btn-block">预订门票</button>
-          </div>
-          
-          <div class="card nearby">
-            <h3>附近景点</h3>
-            <ul class="nearby-list">
-              <li v-for="item in nearbyAttractions" :key="item.id" @click="goToAttraction(item.id)">
-                <img :src="item.image" :alt="item.name">
-                <div>
-                  <h4>{{ item.name }}</h4>
-                  <p>{{ item.distance }}km</p>
+            <el-tab-pane label="游客评价">
+              <el-card>
+                <template #header>
+                  <div class="card-header">
+                    <span>游客评价</span>
+                    <el-button v-if="isLoggedIn" type="primary" @click="showReviewDialog = true">
+                      写评价
+                    </el-button>
+                    <el-button v-else type="primary" @click="router.push('/login')">
+                      登录后评价
+                    </el-button>
+                  </div>
+                </template>
+                
+                <div v-if="attraction.reviews?.length" class="reviews">
+                  <el-timeline>
+                    <el-timeline-item
+                      v-for="review in attraction.reviews"
+                      :key="review.id"
+                      :timestamp="review.date"
+                      placement="top"
+                    >
+                      <el-card class="review-card">
+                        <template #header>
+                          <div class="review-header">
+                            <el-avatar :size="32">{{ review.username.charAt(0) }}</el-avatar>
+                            <span class="reviewer">{{ review.username }}</span>
+                            <el-rate 
+                              v-model="review.rating" 
+                              disabled 
+                              show-score
+                              text-color="#ff9900"
+                            />
+                          </div>
+                        </template>
+                        <p>{{ review.content }}</p>
+                      </el-card>
+                    </el-timeline-item>
+                  </el-timeline>
                 </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+                <el-empty v-else description="暂无评价" />
+              </el-card>
+            </el-tab-pane>
+          </el-tabs>
+        </el-col>
+        
+        <el-col :span="8" class="sidebar">
+          <el-affix :offset="80">
+            <el-card class="mb-4">
+              <template #header>
+                <div class="card-header">
+                  <span>开放时间</span>
+                </div>
+              </template>
+              <el-descriptions :column="1" border>
+                <el-descriptions-item label="营业时间">
+                  {{ attraction.openingHours || '暂无信息' }}
+                </el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+            
+            <el-card class="mb-4">
+              <template #header>
+                <div class="card-header">
+                  <span>门票信息</span>
+                </div>
+              </template>
+              <div class="ticket-info">
+                <div class="price">
+                  <span class="currency">¥</span>
+                  <span class="amount">{{ attraction.price || '免费' }}</span>
+                </div>
+                <el-button type="primary" class="w-full">预订门票</el-button>
+              </div>
+            </el-card>
+            
+            <el-card>
+              <template #header>
+                <div class="card-header">
+                  <span>附近景点</span>
+                </div>
+              </template>
+              <el-scrollbar height="300px">
+                <el-list>
+                  <el-list-item
+                    v-for="item in nearbyAttractions"
+                    :key="item.id"
+                    @click="goToAttraction(item.id)"
+                  >
+                    <template #prefix>
+                      <el-image
+                        :src="item.image"
+                        :alt="item.name"
+                        style="width: 60px; height: 60px"
+                        fit="cover"
+                      >
+                        <template #error>
+                          <div class="image-slot">
+                            <el-icon><Picture /></el-icon>
+                          </div>
+                        </template>
+                      </el-image>
+                    </template>
+                    <template #default>
+                      <div class="nearby-info">
+                        <h4>{{ item.name }}</h4>
+                        <p>{{ item.distance }}km</p>
+                      </div>
+                    </template>
+                  </el-list-item>
+                </el-list>
+              </el-scrollbar>
+            </el-card>
+          </el-affix>
+        </el-col>
+      </el-row>
+    </template>
+
+    <!-- 评价对话框 -->
+    <el-dialog
+      v-model="showReviewDialog"
+      title="写评价"
+      width="500px"
+    >
+      <el-form :model="reviewForm" :rules="reviewRules" ref="reviewFormRef">
+        <el-form-item label="评分" prop="rating">
+          <el-rate 
+            v-model="reviewForm.rating"
+            show-score
+            text-color="#ff9900"
+          />
+        </el-form-item>
+        <el-form-item label="评价内容" prop="content">
+          <el-input
+            type="textarea"
+            v-model="reviewForm.content"
+            placeholder="分享您的游玩体验..."
+            :rows="4"
+            show-word-limit
+            maxlength="500"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showReviewDialog = false">取消</el-button>
+          <el-button type="primary" @click="submitReview" :loading="submitting">
+            提交
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -129,6 +321,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/modules/user'
+import { ElMessage } from 'element-plus'
+import { 
+  Star, 
+  Location, 
+  Picture 
+} from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -142,9 +341,25 @@ const loading = ref(true)
 const error = ref(null)
 const nearbyAttractions = ref([])
 
-// 用户评价
-const userRating = ref(5)
-const userReview = ref('')
+// 评价相关
+const showReviewDialog = ref(false)
+const reviewFormRef = ref(null)
+const submitting = ref(false)
+
+const reviewForm = ref({
+  rating: 5,
+  content: ''
+})
+
+const reviewRules = {
+  rating: [
+    { required: true, message: '请选择评分', trigger: 'change' }
+  ],
+  content: [
+    { required: true, message: '请输入评价内容', trigger: 'blur' },
+    { min: 10, message: '评价内容至少10个字', trigger: 'blur' }
+  ]
+}
 
 onMounted(() => {
   fetchAttractionDetail()
@@ -155,78 +370,43 @@ const fetchAttractionDetail = async () => {
   error.value = null
   
   try {
-    // 这里应该是从API获取数据
-    // const response = await fetch(`/api/attractions/${attractionId.value}`)
-    // attraction.value = await response.json()
+    const { data } = await request.get(`/attractions/${attractionId.value}`)
+    attraction.value = data
     
-    // 模拟数据
-    setTimeout(() => {
-      attraction.value = {
-        id: attractionId.value,
-        name: '示例景点详情',
-        description: '这是一个示例景点的详细描述。这里有丰富的自然风光和人文历史，是旅游的绝佳去处。',
-        image: 'https://via.placeholder.com/800x400?text=景点图片',
-        rating: 4.5,
-        reviewCount: 128,
-        location: '示例省份示例城市',
-        tags: ['自然风光', '历史古迹', '文化体验'],
-        features: [
-          '独特的自然景观',
-          '丰富的历史文化',
-          '特色美食体验',
-          '适合摄影创作'
-        ],
-        tips: [
-          { title: '最佳游览时间', content: '春季和秋季气候宜人，是游览的最佳季节。' },
-          { title: '交通指南', content: '可乘坐公交车或出租车到达，景区内提供电瓶车服务。' }
-        ],
-        reviews: [
-          { id: 1, username: '用户A', rating: 5, date: '2023-05-15', content: '景色非常美丽，服务也很好，值得推荐！' },
-          { id: 2, username: '用户B', rating: 4, date: '2023-04-20', content: '整体不错，就是人有点多，建议避开节假日。' }
-        ],
-        openingHours: '09:00-17:00 (周一至周日)',
-        price: 80
-      }
-      
-      nearbyAttractions.value = [
-        { id: 101, name: '附近景点1', image: 'https://via.placeholder.com/100x100', distance: 2.5 },
-        { id: 102, name: '附近景点2', image: 'https://via.placeholder.com/100x100', distance: 3.8 },
-        { id: 103, name: '附近景点3', image: 'https://via.placeholder.com/100x100', distance: 5.2 }
-      ]
-      
-      loading.value = false
-    }, 1000)
-    
+    // 获取附近景点
+    const { data: nearby } = await request.get(`/attractions/${attractionId.value}/nearby`)
+    nearbyAttractions.value = nearby
   } catch (err) {
     error.value = '加载景点信息失败，请稍后重试'
-    loading.value = false
     console.error(err)
+  } finally {
+    loading.value = false
   }
 }
 
 const submitReview = async () => {
-  if (!userReview.value.trim()) {
-    alert('请输入评价内容')
-    return
-  }
+  if (!reviewFormRef.value) return
   
   try {
-    // 这里应该是向API提交评价
-    // await fetch(`/api/attractions/${attractionId.value}/reviews`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ rating: userRating.value, content: userReview.value })
-    // })
+    await reviewFormRef.value.validate()
+    submitting.value = true
     
-    // 模拟提交成功
-    alert('评价提交成功！')
-    userReview.value = ''
+    await request.post(`/attractions/${attractionId.value}/reviews`, reviewForm.value)
+    
+    ElMessage.success('评价提交成功！')
+    showReviewDialog.value = false
+    reviewForm.value = { rating: 5, content: '' }
     
     // 重新获取景点信息（包含最新评价）
     fetchAttractionDetail()
   } catch (err) {
-    alert('评价提交失败，请稍后重试')
-    console.error(err)
+    if (err.name === 'ValidationError') {
+      // 表单验证错误，已经显示在表单上
+      return
+    }
+    ElMessage.error('评价提交失败，请稍后重试')
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -236,236 +416,139 @@ const goToAttraction = (id) => {
 </script>
 
 <style lang="less" scoped>
-@import '../styles/variables.less';
-
 .attraction-detail {
   max-width: 1200px;
   margin: 0 auto;
-  padding: @spacing-lg 0;
+  padding: 24px;
 }
 
-.loading, .error {
-  padding: @spacing-xl;
-  text-align: center;
-}
-
-.error {
-  h2 {
-    color: @error-color;
-    margin-bottom: @spacing-md;
-  }
-  
-  p {
-    margin-bottom: @spacing-lg;
-  }
+.loading {
+  padding: 24px;
 }
 
 .attraction-header {
-  margin-bottom: @spacing-xl;
+  margin-bottom: 24px;
   
   .main-image {
     width: 100%;
     height: 400px;
-    object-fit: cover;
-    border-radius: @border-radius-lg;
-    margin-bottom: @spacing-md;
+    border-radius: 8px;
+    overflow: hidden;
   }
   
-  h1 {
-    font-size: 32px;
-    margin-bottom: @spacing-md;
+  .attraction-info {
+    padding: 20px 0;
   }
+}
+
+.meta-info {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   
-  .meta-info {
+  .rating {
     display: flex;
-    flex-wrap: wrap;
-    gap: @spacing-lg;
-    margin-bottom: @spacing-md;
+    align-items: center;
+    gap: 8px;
     
-    .rating {
-      display: flex;
-      align-items: center;
-      gap: @spacing-xs;
+    .review-count {
+      color: var(--el-text-color-secondary);
     }
-    
-    .tags {
-      display: flex;
-      gap: @spacing-xs;
-    }
-    
-    .location {
-      display: flex;
-      align-items: center;
-      gap: @spacing-xs;
-      color: @text-color-secondary;
-    }
+  }
+  
+  .location {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 }
 
 .detail-content {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: @spacing-xl;
-  
-  @media (min-width: @screen-lg) {
-    grid-template-columns: 2fr 1fr;
-  }
-  
-  section {
-    margin-bottom: @spacing-xl;
+  margin-top: 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.review-card {
+  .review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     
-    h2 {
-      font-size: 24px;
-      margin-bottom: @spacing-md;
-      padding-bottom: @spacing-xs;
-      border-bottom: 1px solid @border-color;
+    .reviewer {
+      font-weight: 500;
     }
   }
+}
+
+.ticket-info {
+  text-align: center;
   
-  .description {
-    p {
-      line-height: 1.6;
-    }
-  }
-  
-  .features {
-    ul {
-      list-style: disc;
-      padding-left: @spacing-lg;
-      
-      li {
-        margin-bottom: @spacing-sm;
-      }
-    }
-  }
-  
-  .tips {
-    .tip-item {
-      margin-bottom: @spacing-md;
-      
-      h3 {
-        font-size: 18px;
-        margin-bottom: @spacing-xs;
-        color: @primary-color;
-      }
-    }
-  }
-  
-  .reviews {
-    .review-item {
-      margin-bottom: @spacing-lg;
-      padding-bottom: @spacing-md;
-      border-bottom: 1px solid @border-color-dark;
-      
-      &:last-child {
-        border-bottom: none;
-      }
-      
-      .review-header {
-        display: flex;
-        align-items: center;
-        gap: @spacing-sm;
-        margin-bottom: @spacing-sm;
-        
-        .reviewer {
-          font-weight: bold;
-        }
-        
-        .review-date {
-          color: @text-color-light;
-          margin-left: auto;
-        }
-      }
+  .price {
+    margin-bottom: 16px;
+    color: var(--el-color-danger);
+    
+    .currency {
+      font-size: 16px;
+      margin-right: 4px;
     }
     
-    .add-review {
-      margin-top: @spacing-xl;
-      
-      h3 {
-        margin-bottom: @spacing-md;
-      }
-      
-      .rating-input {
-        display: flex;
-        align-items: center;
-        gap: @spacing-sm;
-        margin-bottom: @spacing-md;
-      }
-      
-      .el-textarea {
-        margin-bottom: @spacing-md;
-      }
-    }
-    
-    .login-prompt {
-      margin-top: @spacing-lg;
-      text-align: center;
+    .amount {
+      font-size: 32px;
+      font-weight: bold;
     }
   }
+}
+
+.nearby-info {
+  h4 {
+    margin: 0 0 4px;
+    font-size: 14px;
+  }
   
-  .sidebar {
-    .card {
-      background-color: @bg-color-light;
-      border-radius: @border-radius-lg;
-      padding: @spacing-lg;
-      margin-bottom: @spacing-lg;
-      
-      h3 {
-        margin-bottom: @spacing-md;
-        font-size: 18px;
-      }
-    }
-    
-    .ticket-info {
-      .price {
-        font-size: 24px;
-        font-weight: bold;
-        color: @primary-color;
-        margin-bottom: @spacing-md;
-      }
-      
-      .btn-block {
-        width: 100%;
-      }
-    }
-    
-    .nearby-list {
-      li {
-        display: flex;
-        align-items: center;
-        gap: @spacing-md;
-        padding: @spacing-sm 0;
-        cursor: pointer;
-        border-bottom: 1px solid @border-color;
-        
-        &:last-child {
-          border-bottom: none;
-        }
-        
-        &:hover {
-          h4 {
-            color: @primary-color;
-          }
-        }
-        
-        img {
-          width: 60px;
-          height: 60px;
-          object-fit: cover;
-          border-radius: @border-radius-base;
-        }
-        
-        h4 {
-          margin-bottom: @spacing-xs;
-          .hover-transition();
-        }
-        
-        p {
-          color: @text-color-secondary;
-          font-size: @font-size-sm;
-        }
-      }
-    }
+  p {
+    margin: 0;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+  }
+}
+
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 20px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mr-2 {
+  margin-right: 8px;
+}
+
+.ml-1 {
+  margin-left: 4px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+:deep(.el-carousel__item) {
+  .el-image {
+    width: 100%;
+    height: 100%;
   }
 }
 </style> 

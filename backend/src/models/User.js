@@ -35,11 +35,9 @@ const User = sequelize.define('User', {
   preferences: {
     type: DataTypes.JSON,
     defaultValue: {}
-  },
-  lastLogin: {
-    type: DataTypes.DATE
   }
 }, {
+  underscored: true,
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {

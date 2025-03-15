@@ -40,6 +40,10 @@ const Attraction = sequelize.define('Attraction', {
     type: DataTypes.JSON,
     defaultValue: []
   },
+  openingHours: {
+    type: DataTypes.JSON,
+    defaultValue: {}
+  },
   avgRating: {
     type: DataTypes.DECIMAL(3, 2),
     defaultValue: 0
@@ -58,22 +62,46 @@ const Attraction = sequelize.define('Attraction', {
   }
 }, {
   tableName: 'attractions',
-  underscored: true,
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  underscored: true
 });
 
 // 类方法
-Attraction.findNearby = async function(latitude, longitude, radius) {
+Attraction.findNearby = async function(latitude, longitude, radius = 5) {
   const query = `
-    SELECT id, name, 
-           SQRT(POW(latitude - ${latitude}, 2) + POW(longitude - ${longitude}, 2)) * 111.32 as distance
-    FROM attractions
-    WHERE SQRT(POW(latitude - ${latitude}, 2) + POW(longitude - ${longitude}, 2)) * 111.32 <= ${radius}
+    SELECT *, 
+           (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * 
+           cos(radians(longitude) - radians(?)) + sin(radians(?)) * 
+           sin(radians(latitude)))) AS distance 
+    FROM attractions 
+    HAVING distance < ? 
     ORDER BY distance;
   `;
   
-  return await sequelize.query(query, { type: sequelize.QueryTypes.SELECT });
+  return await sequelize.query(query, {
+    replacements: [latitude, longitude, latitude, radius],
+    type: sequelize.QueryTypes.SELECT
+  });
+};
+
+// 更新景点评分
+Attraction.updateRating = async function(attractionId) {
+  const result = await sequelize.query(`
+    SELECT AVG(rating) as avgRating, COUNT(*) as ratingCount
+    FROM ratings
+    WHERE attraction_id = ? AND status = 'visible'
+  `, {
+    replacements: [attractionId],
+    type: sequelize.QueryTypes.SELECT
+  });
+
+  if (result && result[0]) {
+    await this.update({
+      avgRating: result[0].avgRating || 0,
+      ratingCount: result[0].ratingCount || 0
+    }, {
+      where: { id: attractionId }
+    });
+  }
 };
 
 module.exports = Attraction;

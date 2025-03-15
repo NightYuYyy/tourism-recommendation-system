@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const User = require('../models/User');
 
 // 登录路由
@@ -26,9 +27,6 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
-    
-    // 更新最后登录时间
-    await user.update({ lastLogin: new Date() });
     
     res.json({
       token,

@@ -1,100 +1,122 @@
 <template>
   <div class="login-page">
-    <div class="login-container">
+    <el-card class="login-container">
       <div class="login-header">
         <h2>{{ isLogin ? '登录' : '注册' }}</h2>
         <p>{{ isLogin ? '欢迎回来！' : '创建新账号' }}</p>
       </div>
 
-      <form class="login-form" @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label for="email">邮箱</label>
-          <input
-            id="email"
+      <el-form 
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        class="login-form"
+        @submit.prevent="handleSubmit"
+      >
+        <el-form-item prop="email" label="邮箱">
+          <el-input
             v-model="form.email"
             type="email"
-            required
             placeholder="请输入邮箱"
-          />
-        </div>
+          >
+            <template #prefix>
+              <el-icon><Message /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
 
-        <div class="form-group">
-          <label for="password">密码</label>
-          <div class="password-input">
-            <input
-              id="password"
-              v-model="form.password"
-              :type="showPassword ? 'text' : 'password'"
-              required
-              placeholder="请输入密码"
-            />
-            <button
-              type="button"
-              class="toggle-password"
-              @click="showPassword = !showPassword"
-            >
-              <i :class="showPassword ? 'el-icon-view' : 'el-icon-hide'"></i>
-            </button>
-          </div>
-        </div>
+        <el-form-item prop="password" label="密码">
+          <el-input
+            v-model="form.password"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="请输入密码"
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+            <template #suffix>
+              <el-icon 
+                class="cursor-pointer"
+                @click="showPassword = !showPassword"
+              >
+                <View v-if="showPassword" />
+                <Hide v-else />
+              </el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
 
-        <div v-if="!isLogin" class="form-group">
-          <label for="confirmPassword">确认密码</label>
-          <div class="password-input">
-            <input
-              id="confirmPassword"
-              v-model="form.confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              required
-              placeholder="请再次输入密码"
-            />
-            <button
-              type="button"
-              class="toggle-password"
-              @click="showConfirmPassword = !showConfirmPassword"
-            >
-              <i :class="showConfirmPassword ? 'el-icon-view' : 'el-icon-hide'"></i>
-            </button>
-          </div>
-        </div>
+        <el-form-item 
+          v-if="!isLogin" 
+          prop="confirmPassword" 
+          label="确认密码"
+        >
+          <el-input
+            v-model="form.confirmPassword"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            placeholder="请再次输入密码"
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+            <template #suffix>
+              <el-icon 
+                class="cursor-pointer"
+                @click="showConfirmPassword = !showConfirmPassword"
+              >
+                <View v-if="showConfirmPassword" />
+                <Hide v-else />
+              </el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
 
         <div class="form-options">
-          <label class="remember-me">
-            <input type="checkbox" v-model="form.rememberMe" />
-            <span>记住我</span>
-          </label>
-          <a href="#" class="forgot-password">忘记密码？</a>
+          <el-checkbox v-model="form.rememberMe">记住我</el-checkbox>
+          <el-link type="primary" href="#">忘记密码？</el-link>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">
+        <el-button 
+          type="primary" 
+          class="w-full"
+          :loading="loading"
+          @click="handleSubmit"
+        >
           {{ isLogin ? '登录' : '注册' }}
-        </button>
+        </el-button>
 
-        <div class="divider">
+        <el-divider>
           <span>或</span>
-        </div>
+        </el-divider>
 
         <div class="social-login">
-          <button type="button" class="btn btn-outline social-btn">
-            <i class="el-icon-wechat"></i>
+          <el-button class="w-full mb-3">
+            <template #icon>
+              <el-icon><ChatDotRound /></el-icon>
+            </template>
             微信登录
-          </button>
-          <button type="button" class="btn btn-outline social-btn">
-            <i class="el-icon-qq"></i>
+          </el-button>
+          <el-button class="w-full">
+            <template #icon>
+              <el-icon><ChatRound /></el-icon>
+            </template>
             QQ登录
-          </button>
+          </el-button>
         </div>
-      </form>
+      </el-form>
 
       <div class="login-footer">
         <p>
           {{ isLogin ? '还没有账号？' : '已有账号？' }}
-          <a href="#" @click.prevent="toggleMode">
+          <el-link 
+            type="primary"
+            @click="toggleMode"
+          >
             {{ isLogin ? '立即注册' : '立即登录' }}
-          </a>
+          </el-link>
         </p>
       </div>
-    </div>
+    </el-card>
   </div>
 </template>
 
@@ -102,9 +124,13 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Message, Lock, View, Hide, ChatDotRound, ChatRound } from '@element-plus/icons-vue'
+import request from '@/utils/request'
 
 const router = useRouter()
+const formRef = ref(null)
 const isLogin = ref(true)
+const loading = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
@@ -115,198 +141,113 @@ const form = reactive({
   rememberMe: false
 })
 
+const rules = {
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { 
+      required: true, 
+      message: '请再次输入密码', 
+      trigger: 'blur' 
+    },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== form.password) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
 const toggleMode = () => {
   isLogin.value = !isLogin.value
   form.email = ''
   form.password = ''
   form.confirmPassword = ''
   form.rememberMe = false
+  formRef.value?.resetFields()
 }
 
 const handleSubmit = async () => {
+  if (!formRef.value) return
+  
   try {
-    if (!isLogin.value && form.password !== form.confirmPassword) {
-      ElMessage.error('两次输入的密码不一致')
-      return
-    }
-
-    // TODO: 实现登录/注册逻辑
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await formRef.value.validate()
+    loading.value = true
+    
+    const url = isLogin.value ? '/auth/login' : '/auth/register'
+    const { data } = await request.post(url, {
+      email: form.email,
+      password: form.password,
+      remember: form.rememberMe
+    })
     
     ElMessage.success(isLogin.value ? '登录成功' : '注册成功')
     router.push('/')
   } catch (error) {
     ElMessage.error(error.message || '操作失败，请重试')
+  } finally {
+    loading.value = false
   }
 }
 </script>
 
 <style lang="less" scoped>
-@import '../styles/variables.less';
-
 .login-page {
   min-height: 100vh;
-  .flex-center();
-  background: linear-gradient(135deg, fade(@primary-color, 10%) 0%, fade(@primary-color-light, 10%) 100%);
-  padding: @spacing-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--el-bg-color-page);
+  padding: 20px;
 }
 
 .login-container {
   width: 100%;
   max-width: 480px;
-  background: @bg-color;
-  border-radius: @border-radius-lg;
-  box-shadow: @box-shadow-lg;
-  padding: @spacing-xl;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: @spacing-xl;
+  margin-bottom: 24px;
 
   h2 {
-    font-size: @font-size-xxl;
-    color: @text-color;
-    margin-bottom: @spacing-xs;
+    font-size: 24px;
+    margin-bottom: 8px;
   }
 
   p {
-    color: @text-color-secondary;
-  }
-}
-
-.login-form {
-  .form-group {
-    margin-bottom: @spacing-lg;
-
-    label {
-      display: block;
-      margin-bottom: @spacing-xs;
-      color: @text-color;
-      font-weight: 500;
-    }
-
-    input {
-      width: 100%;
-      height: 44px;
-      padding: 0 @spacing-md;
-      border: 1px solid @border-color;
-      border-radius: @border-radius;
-      .hover-transition();
-
-      &:focus {
-        border-color: @primary-color;
-        box-shadow: 0 0 0 3px fade(@primary-color, 10%);
-      }
-    }
-  }
-
-  .password-input {
-    position: relative;
-
-    .toggle-password {
-      position: absolute;
-      right: @spacing-md;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      color: @text-color-secondary;
-      cursor: pointer;
-      padding: 0;
-
-      &:hover {
-        color: @text-color;
-      }
-    }
+    color: var(--el-text-color-secondary);
   }
 }
 
 .form-options {
-  .flex-between();
-  margin-bottom: @spacing-lg;
-
-  .remember-me {
-    .flex-center();
-    gap: @spacing-xs;
-    cursor: pointer;
-
-    input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-    }
-  }
-
-  .forgot-password {
-    color: @primary-color;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-.btn-block {
-  width: 100%;
-  height: 44px;
-  font-size: @font-size-lg;
-}
-
-.divider {
-  position: relative;
-  text-align: center;
-  margin: @spacing-lg 0;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: calc(50% - 30px);
-    height: 1px;
-    background: @border-color;
-  }
-
-  &::before {
-    left: 0;
-  }
-
-  &::after {
-    right: 0;
-  }
-
-  span {
-    background: @bg-color;
-    padding: 0 @spacing-md;
-    color: @text-color-secondary;
-  }
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0;
 }
 
 .social-login {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: @spacing-md;
-
-  .social-btn {
-    .flex-center();
-    gap: @spacing-xs;
-    height: 44px;
-  }
+  margin-top: 16px;
 }
 
 .login-footer {
-  margin-top: @spacing-xl;
   text-align: center;
-  color: @text-color-secondary;
+  margin-top: 24px;
+}
 
-  a {
-    color: @primary-color;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
+:deep(.el-input-group__prepend) {
+  padding: 0 12px;
 }
 </style>

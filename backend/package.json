@@ -7,17 +7,29 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db:sync": "node syncDb.js",
+    "db:sync:force": "node syncDb.js --force",
+    "db:sync:alter": "node syncDb.js --alter",
+    "db:info": "node syncDb.js --info",
+    "db:check": "node checkModels.js",
+    "db:fix": "node checkModels.js --fix",
+    "db:mock": "node syncDb.js --force --mock",
+    "api:check": "node checkApis.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.1.4",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.0",
-    "mysql2": "^3.3.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.13.0",
     "redis": "^4.6.7",
-    "sequelize": "^6.32.1"
+    "sequelize": "^6.37.6"
   },
   "devDependencies": {
     "eslint": "^8.42.0",
