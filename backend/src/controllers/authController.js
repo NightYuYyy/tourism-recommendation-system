@@ -1,5 +1,5 @@
 const authService = require('../services/authService')
-const { AuthorizationError } = require('../utils/errors')
+const { AuthorizationError, ValidationError } = require('../utils/errors')
 
 /**
  * 认证控制器
@@ -32,8 +32,7 @@ class AuthController {
    */
   async login(req, res, next) {
     try {
-      const { email, password } = req.body
-      const result = await authService.login(email, password)
+      const result = await authService.login(req.body)
       res.json({
         message: '登录成功',
         ...result

@@ -15,27 +15,36 @@ const {
 class AuthService {
   /**
    * 用户登录
-   * @param {string} email - 用户邮箱
-   * @param {string} password - 用户密码
+   * @param {Object} loginData - 登录数据
+   * @param {string} loginData.email - 用户邮箱
+   * @param {string} loginData.password - 用户密码
    * @returns {Promise<{token: string, user: Object}>}
    * @throws {AuthenticationError} 当用户不存在或密码错误时
    */
-  async login(email, password) {
-    const user = await User.findByEmail(email);
+  async login(loginData) {
+    const { email, password } = loginData
+
+    // 参数验证
+    if (!email || !password) {
+      throw new ValidationError('邮箱和密码都是必填的')
+    }
+
+
+    const user = await User.findByEmail(email)
     if (!user) {
-      throw new AuthenticationError('用户不存在');
+      throw new AuthenticationError('用户不存在')
     }
 
-    const isValid = await user.validatePassword(password);
+    const isValid = await user.validatePassword(password)
     if (!isValid) {
-      throw new AuthenticationError('密码错误');
+      throw new AuthenticationError('密码错误')
     }
 
-    const token = this.generateToken(user);
+    const token = this.generateToken(user)
     return {
       token,
       user: this.sanitizeUser(user)
-    };
+    }
   }
 
   /**
