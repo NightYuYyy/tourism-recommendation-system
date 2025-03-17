@@ -13,7 +13,6 @@
 
 require('dotenv').config();
 const sequelize = require('./src/config/database');
-const { DataTypes } = require('sequelize');
 const User = require('./src/models/User');
 const Attraction = require('./src/models/Attraction');
 const Rating = require('./src/models/Rating');

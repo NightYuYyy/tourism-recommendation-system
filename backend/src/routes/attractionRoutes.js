@@ -5,7 +5,6 @@ const Rating = require('../models/Rating');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { Op } = require('sequelize');
-const sequelize = require('../config/database');
 
 // 获取推荐景点
 router.get('/featured', async (req, res) => {
@@ -88,7 +87,6 @@ router.get('/', async (req, res) => {
     const {
       page = 1,
       limit = 10,
-      category,
       search,
       sortBy = 'averageRating',
       order = 'DESC',
@@ -101,11 +99,7 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
     const where = {};
 
-    // 由于数据库中没有category字段，我们可以使用tags字段进行过滤
-    // if (category && category !== '') {
-    //   where.category = category;
-    // }
-
+    
     if (search && search !== '') {
       where.name = {
         [Op.like]: `%${search}%`
