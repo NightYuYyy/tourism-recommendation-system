@@ -1,41 +1,50 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const auth = async (req, res, next) => {
+/**
+ * 认证中间件
+ * 验证请求中的JWT token并解析用户信息
+ */
+exports.authenticateToken = (req, res, next) => {
   try {
-    // 获取请求头中的 token
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
       return res.status(401).json({ message: '未提供认证令牌' });
     }
 
-    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+      if (err) {
+        return res.status(403).json({ message: '无效的认证令牌' });
+      }
 
-    // 验证 token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Token解析结果:', decoded);
-
-    // 查找用户
-    const user = await User.findByPk(decoded.id);
-    if (!user) {
-      return res.status(401).json({ message: '用户不存在' });
-    }
-
-    console.log('认证成功，用户ID:', user.id, '用户角色:', user.role);
-
-    // 将用户信息添加到请求对象
-    req.user = user;
-    next();
+      req.user = user;
+      next();
+    });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: '无效的认证令牌' });
-    }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: '认证令牌已过期' });
-    }
-    console.error('Auth middleware error:', error);
+    console.error('Token verification error:', error);
     res.status(500).json({ message: '服务器错误' });
   }
 };
 
-module.exports = auth;
+/**
+ * 角色验证中间件
+ * 检查用户是否具有特定角色
+ * @param {string[]} roles - 允许的角色列表
+ */
+exports.checkRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: '未经认证的请求' });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: '没有足够的权限' });
+    }
+
+    next();
+  };
+};
+
+module.exports = exports;

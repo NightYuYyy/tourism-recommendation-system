@@ -1,22 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { syncDatabase } = require('../utils/syncDatabase');
-const auth = require('../middleware/auth');
-const adminAuth = require('../middleware/adminAuth');
+const systemController = require('../controllers/systemController');
+const { authenticateToken, checkRole } = require('../middleware/auth');
 
-// 同步数据库结构 (仅管理员可用)
-router.post('/sync-database', auth, adminAuth, async (req, res) => {
-  try {
-    const force = req.body.force === true;
-    const result = await syncDatabase(force);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: '数据库同步失败',
-      error: error.message 
-    });
-  }
-});
+/**
+ * 系统相关路由
+ * @module routes/system
+ */
+
+// 需要认证的路由
+router.use(authenticateToken);
+
+// 管理员路由
+router.post('/sync-database', checkRole(['admin']), systemController.syncDatabase);
 
 module.exports = router; 

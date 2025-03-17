@@ -1,0 +1,755 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "旅游推荐系统 API",
+    "description": "旅游推荐系统的 RESTful API 文档",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "API 基础路径"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "preferences": {
+            "type": "object"
+          }
+        }
+      },
+      "Attraction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "float"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "float"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "avgRating": {
+            "type": "number",
+            "format": "float"
+          },
+          "visitCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "attractionId": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "rating": {
+            "type": "number",
+            "format": "float",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["认证"],
+        "summary": "用户注册",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                },
+                "required": ["username", "password", "email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "注册成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["认证"],
+        "summary": "用户登录",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "认证失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["认证"],
+        "summary": "获取当前用户信息",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取用户信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attractions": {
+      "get": {
+        "tags": ["景点"],
+        "summary": "获取景点列表",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "页码"
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "每页数量"
+          },
+          {
+            "in": "query",
+            "name": "city",
+            "schema": {
+              "type": "string"
+            },
+            "description": "城市筛选"
+          },
+          {
+            "in": "query",
+            "name": "tags",
+            "schema": {
+              "type": "string"
+            },
+            "description": "标签筛选（多个标签用逗号分隔）"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "搜索关键词"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取景点列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Attraction"
+                      }
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["景点"],
+        "summary": "创建新景点（管理员）",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Attraction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "景点创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attraction"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reviews/attraction/{attractionId}": {
+      "get": {
+        "tags": ["评论"],
+        "summary": "获取景点评论",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attractionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "景点ID"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "页码"
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取评论列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Review"
+                      }
+                    },
+                    "count": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/popular": {
+      "get": {
+        "tags": ["推荐"],
+        "summary": "获取热门推荐",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "schema": {
+              "type": "string"
+            },
+            "description": "城市筛选"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "返回数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取热门推荐",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Attraction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/similar/{attractionId}": {
+      "get": {
+        "tags": ["推荐"],
+        "summary": "获取相似景点",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attractionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "景点ID"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            },
+            "description": "返回数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取相似景点",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Attraction"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommendations/personalized": {
+      "get": {
+        "tags": ["推荐"],
+        "summary": "获取个性化推荐",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "返回数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取个性化推荐",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Attraction"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites/me": {
+      "get": {
+        "tags": ["收藏"],
+        "summary": "获取我的收藏",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功获取收藏列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Attraction"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites/attraction/{attractionId}": {
+      "post": {
+        "tags": ["收藏"],
+        "summary": "添加收藏",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attractionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "景点ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "收藏成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["收藏"],
+        "summary": "取消收藏",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attractionId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "景点ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "取消收藏成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/sync-database": {
+      "post": {
+        "tags": ["系统"],
+        "summary": "同步数据库（管理员）",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "同步成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 

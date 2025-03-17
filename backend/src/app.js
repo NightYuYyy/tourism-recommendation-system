@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const compression = require('compression');
 const dotenv = require('dotenv');
+const errorHandler = require('./middleware/errorHandler');
 
 // 加载环境变量
 dotenv.config();
@@ -60,23 +61,15 @@ app.use('/api/users', userRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/reviews', reviewRoutes);
 
-// 错误处理
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    success: false, 
-    message: '服务器内部错误',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+// 404处理
+app.use((req, res, next) => {
+  res.status(404).json({
+    message: '请求的资源不存在'
   });
 });
 
-// 404处理
-app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: '未找到请求的资源' 
-  });
-});
+// 错误处理中间件
+app.use(errorHandler);
 
 // 启动服务器
 app.listen(PORT, () => {

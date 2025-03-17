@@ -1,224 +1,132 @@
-const { Attraction, Rating, User } = require('../models/Attraction')
-const { Op } = require('sequelize')
+const attractionService = require('../services/attractionService');
+const { AuthorizationError } = require('../utils/errors');
 
-// 获取景点列表
-exports.getAttractions = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 12,
-      search = '',
-      category = '',
-      sortBy = 'rating',
-      priceMin,
-      priceMax
-    } = req.query
+/**
+ * 景点控制器
+ * 处理所有与景点相关的请求
+ */
+class AttractionController {
+  /**
+   * 获取景点列表
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async getAttractions(req, res, next) {
+    try {
+      const result = await attractionService.getAttractions(req.query);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    // 构建查询条件
-    const where = {}
-    if (search) {
-      where[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } }
-      ]
+  /**
+   * 获取景点详情
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async getAttractionById(req, res, next) {
+    try {
+      const attraction = await attractionService.getAttractionById(req.params.id);
+      res.json(attraction);
+    } catch (error) {
+      next(error);
     }
-    if (category) {
-      where.category = category
-    }
-    if (priceMin && priceMax) {
-      where.price = {
-        [Op.between]: [parseFloat(priceMin), parseFloat(priceMax)]
+  }
+
+  /**
+   * 创建新景点
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async createAttraction(req, res, next) {
+    try {
+      if (req.user.role !== 'admin') {
+        throw new AuthorizationError('只有管理员可以创建景点');
       }
+      const attraction = await attractionService.createAttraction(req.body);
+      res.status(201).json(attraction);
+    } catch (error) {
+      next(error);
     }
+  }
 
-    // 构建排序条件
-    let order = []
-    switch (sortBy) {
-      case 'rating':
-        order = [['avgRating', 'DESC']]
-        break
-      case 'price':
-        order = [['price', 'ASC']]
-        break
-      case 'created':
-        order = [['createdAt', 'DESC']]
-        break
-      default:
-        order = [['avgRating', 'DESC']]
+  /**
+   * 更新景点信息
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async updateAttraction(req, res, next) {
+    try {
+      if (req.user.role !== 'admin') {
+        throw new AuthorizationError('只有管理员可以更新景点');
+      }
+      const attraction = await attractionService.updateAttraction(
+        req.params.id,
+        req.body
+      );
+      res.json(attraction);
+    } catch (error) {
+      next(error);
     }
+  }
 
-    // 分页查询
-    const { rows: attractions, count } = await Attraction.findAndCountAll({
-      where,
-      order,
-      limit: parseInt(limit),
-      offset: (parseInt(page) - 1) * parseInt(limit),
-      include: [
-        {
-          model: Rating,
-          attributes: ['rating'],
-          include: [
-            {
-              model: User,
-              attributes: ['username']
-            }
-          ]
-        }
-      ]
-    })
+  /**
+   * 删除景点
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async deleteAttraction(req, res, next) {
+    try {
+      if (req.user.role !== 'admin') {
+        throw new AuthorizationError('只有管理员可以删除景点');
+      }
+      await attractionService.deleteAttraction(req.params.id);
+      res.json({ message: '景点删除成功' });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      attractions,
-      total: count,
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(count / parseInt(limit))
-    })
-  } catch (error) {
-    console.error('获取景点列表错误:', error)
-    res.status(500).json({ message: '服务器错误' })
+  /**
+   * 搜索景点
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async searchAttractions(req, res, next) {
+    try {
+      const result = await attractionService.searchAttractions(req.query);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 获取附近的景点
+   * @param {Object} req - Express请求对象
+   * @param {Object} res - Express响应对象
+   * @param {Function} next - Express next中间件函数
+   */
+  async getNearbyAttractions(req, res, next) {
+    try {
+      const { latitude, longitude, radius } = req.query;
+      const attractions = await attractionService.getNearbyAttractions(
+        parseFloat(latitude),
+        parseFloat(longitude),
+        parseFloat(radius)
+      );
+      res.json({ attractions });
+    } catch (error) {
+      next(error);
+    }
   }
 }
 
-// 获取单个景点详情
-exports.getAttractionById = async (req, res) => {
-  try {
-    const { id } = req.params
-    const attraction = await Attraction.findByPk(id, {
-      include: [
-        {
-          model: Rating,
-          include: [
-            {
-              model: User,
-              attributes: ['id', 'username']
-            }
-          ]
-        }
-      ]
-    })
-
-    if (!attraction) {
-      return res.status(404).json({ message: '景点不存在' })
-    }
-
-    res.json({ attraction })
-  } catch (error) {
-    console.error('获取景点详情错误:', error)
-    res.status(500).json({ message: '服务器错误' })
-  }
-}
-
-// 添加新景点（管理员）
-exports.createAttraction = async (req, res) => {
-  try {
-    const {
-      name,
-      description,
-      category,
-      price,
-      location,
-      images,
-      openingHours,
-      contactInfo
-    } = req.body
-
-    const attraction = await Attraction.create({
-      name,
-      description,
-      category,
-      price,
-      location,
-      images,
-      openingHours,
-      contactInfo
-    })
-
-    res.status(201).json({
-      message: '景点创建成功',
-      attraction
-    })
-  } catch (error) {
-    console.error('创建景点错误:', error)
-    res.status(500).json({ message: '服务器错误' })
-  }
-}
-
-// 更新景点信息（管理员）
-exports.updateAttraction = async (req, res) => {
-  try {
-    const { id } = req.params
-    const attraction = await Attraction.findByPk(id)
-
-    if (!attraction) {
-      return res.status(404).json({ message: '景点不存在' })
-    }
-
-    await attraction.update(req.body)
-
-    res.json({
-      message: '景点信息更新成功',
-      attraction
-    })
-  } catch (error) {
-    console.error('更新景点信息错误:', error)
-    res.status(500).json({ message: '服务器错误' })
-  }
-}
-
-// 删除景点（管理员）
-exports.deleteAttraction = async (req, res) => {
-  try {
-    const { id } = req.params
-    const attraction = await Attraction.findByPk(id)
-
-    if (!attraction) {
-      return res.status(404).json({ message: '景点不存在' })
-    }
-
-    await attraction.destroy()
-
-    res.json({ message: '景点删除成功' })
-  } catch (error) {
-    console.error('删除景点错误:', error)
-    res.status(500).json({ message: '服务器错误' })
-  }
-}
-
-// 提交景点评分
-exports.rateAttraction = async (req, res) => {
-  try {
-    const { id } = req.params
-    const { rating, comment } = req.body
-    const userId = req.user.id
-
-    const attraction = await Attraction.findByPk(id)
-    if (!attraction) {
-      return res.status(404).json({ message: '景点不存在' })
-    }
-
-    // 创建或更新评分
-    const [userRating, created] = await Rating.findOrCreate({
-      where: { userId, attractionId: id },
-      defaults: { rating, comment }
-    })
-
-    if (!created) {
-      await userRating.update({ rating, comment })
-    }
-
-    // 更新景点平均评分
-    const ratings = await Rating.findAll({
-      where: { attractionId: id }
-    })
-    const avgRating = ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length
-    await attraction.update({ avgRating })
-
-    res.json({
-      message: created ? '评分提交成功' : '评分更新成功',
-      rating: userRating
-    })
-  } catch (error) {
-    console.error('提交评分错误:', error)
-    res.status(500).json({ message: '服务器错误' })
-  }
-}
+module.exports = new AttractionController();
